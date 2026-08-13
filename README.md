@@ -1,14 +1,5 @@
 # Educational C Compiler for Windows x64
 
-## Dedication
-This project is dedicated to the memory of **Dennis M. Ritchie**, the creator of the C programming language, whose work profoundly shaped modern computer science and software development.
-
-## “C is quirky, flawed, and an enormous success…”
- — Dennis M. Ritchie, The Development of the C Language
-   Source: Bell Labs paper on C language history.
-
----
-
 ## Purpose
 C compiler project designed to help programmers understand:
 * how compilers work internally
