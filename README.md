@@ -1,6 +1,6 @@
 # Educational C Compiler for Windows x64
 
-## Purpose
+# Purpose
 C compiler project designed to help programmers understand:
 * how compilers work internally
 * low-level programming concepts
@@ -11,11 +11,11 @@ C compiler project designed to help programmers understand:
 * Windows x64 PE generation
 * minimal custom linker (dynamic linking only)
 * .exe and .dll output support
-This project is built **for learning and research purposes** — not as a production replacement for established compilers such as GCC or Clang.
+This project is built **for learning and research purposes**
 
 ---
 
-## Historical Context
+# Historical Context
 
 C evolved from earlier typeless languages such as **BCPL** and **B**.
 The B language treated variables as machine words without explicit types, which limited safety and expressiveness.
