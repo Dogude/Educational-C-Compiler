@@ -12,7 +12,7 @@ struct Token {
 	enum Type type;
 	size_t line;
 	char lexeme[LEXEME_SIZE];
-	unsigned char number[8];
+	unsigned char number[8]; 
 	int number_size;
 	int index; /* write to lexeme */
 	int state; /* lexeme state */
@@ -29,33 +29,151 @@ struct FileReader {
 };
 
 enum Type {
+
+	/* literals */
+	IDENTIFIER,
+	STR,
+	_CHAR,
+	CHAR32_T,
+	CHAR16_T,
+	LSTR,
+	ULL,
+	LL,
+	L,
+	U,
+	INTEGER,
+	_DOUBLE,
+	_FLOAT,
+	_LONG_DOUBLE,
 	
-	Identifier,
-	
-	string_literal,
-	
-	ull_Literal,
-	ll_Literal,
-	integer_literal,
-	u_literal,
-	l_literal,
-	double_literal,
-	float_literal,
-	long_double_literal,
-	
-	Long,
-	Int,
-	Unsigned,
-	Struct,
-	Enum,
-	Union,
-	
-	Plus,
-	PlusEqual,
-	Minus,
-	MinusEqual,	
-	
-	SemiColomn
+	/* PREPROCESSOR */
+	DEFINE,
+	IFNDEF,
+	IFDEF,
+	PRE_IF,
+	ELIF,
+	PRE_ELSE,
+	ENDIF,
+	ELIFDEF,
+	ELIFNDEF,
+	UNDEF,
+	EMBED,
+	LINE,
+	ERROR,
+	WARNING,
+	PRAGMA,
+	SHARP,
+	CONCAT,
+	DEFINED,
+
+	/* other */
+	EXTERN,
+	STATIC,
+	INLINE,
+	ALIGNAS,
+	TYPEDEF,
+	CONSTEXPR,
+	FALSE,
+	NULLPTR,
+	TRUE,
+	REGISTER,
+	RESTRICT,
+	STATIC_ASSERT,
+	THREAD_LOCAL,
+	_STATIC_ASSERT,
+	_THREAD_LOCAL,
+	TYPEOF,
+	TYPEOF_UNQUAL,
+	VOLATILE,
+	_ATOMIC,
+	_ALIGNAS,
+	_BOOL,
+
+	/* type words */
+	LONG,
+	INT,
+	AUTO,
+	BOOL,
+	UNSIGNED,
+	STRUCT,
+	ENUM,
+	UNION,
+	DOUBLE,
+	FLOAT,	
+	CHAR,
+	SHORT,
+	SIGNED,
+	COMPLEX,
+	IMAGINARY,
+	CONST,
+	VOID,
+	GENERIC,
+	NO_RETURN,
+
+	/* instructions */
+	WHILE,
+	FOR,
+	IF,
+	ELSE,
+	GOTO,
+	BREAK,
+	CASE,
+	CONTINUE,
+	DEFAULT,
+	DO,
+	ELSE,
+	RETURN,
+	SWITCH,
+
+	/* Operators */
+	PLUS,
+	PLUS_EQU,
+	MINUS,
+	MINUS_EQU,
+	ARROW,
+	ASSIGN,
+	CMP,
+	DOT,
+	DIV,
+	DIV_EQU,
+	MUL,
+	MUL_EQU,
+	AND,
+	AND_EQU,
+	OR,
+	OR_EQU,
+	XOR,
+	XOR_EQU,
+	PLUS_PLUS,
+	MINUS_MINUS,
+	SHIFTR,
+	SHIFTR_EQU,
+	SHIFTL,
+	SHIFTL_EQU,
+	MOD,
+	MOD_EQU,
+	INVERT,
+	NOT,
+	LOGICAL_AND,
+	LOGICAL_OR,
+	NOT_CMP,
+	GT,
+	LT,
+	GT_EQU,
+	LT_EQU,
+	OPEN_PAR,
+	CLOSE_PAR,
+	OPEN_BRACKET,
+	CLOSET_BRACKET,
+	THREE_DOT,
+	COMMA,
+	QUESTION,
+	COLOMN,
+	SIZEOF,
+	_ALIGNOF,
+	ALIGNOF,
+
+	SEMICOLOMN
 
 };
 
@@ -67,9 +185,10 @@ int is_xdigit(int c);
 
 void print_line();
 void number();
-int next_char();
 int peek();
 void identifier();
+void sharp_lex();
+void string();
 
 
 extern struct Token Token;
