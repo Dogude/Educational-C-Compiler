@@ -138,169 +138,268 @@ void lexer(IncludeStack *top) {
 		advance();
 		if (peek() == '+') {
 			advance(); // consume
-			Token.type = 123;
+			Token.type = PLUS_PLUS;
+			parser();
 
 		}
 		else {
-			Token.type = 12;
-
+			Token.type = PLUS;
+			parser();		
 		}
+
+		break;
 
 	case '-':
+		advance();
 		if (peek() == '-') {
-			next_char(); // consume
-			Token.type = 123;
-
+			advance(); // consume
+			Token.type = MINUS_MINUS;
+			parser();
 		}
 		else if (peek() == '=') {
-			next_char(); // consume
-			Token.type = 123;
-
+			advance();
+			Token.type = MINUS_EQU;
+			parser();
 		}
 		else {
-			Token.type = 12;
-
+			Token.type = MINUS;
+			parser();
 		}
+		
+		break;
 
 	case '%':
+		advance();
 		if (peek() == '=') {
-			next_char(); // consume
-			Token.type = 123;
-
+			advance();
+			Token.type = MOD_EQU;
+			parser();
 		}
 		else {
-			Token.type = 12;
-
+			Token.type = MOD;
+			parser();
 		}
-	
-	case '\n':
+
 		break;
 
 	case '?':
+		advance();
+		Token.type = QUESTION;
+		parser();
+		break;
 
+	case '\r':
+	case '\t':
+	case ' ':
+		advance();
+		break;
+	
+	case '\n':
+		FileReader.last_line = FileReader.pos;
+		FileReader.line++;
+		advance();
+		break;
+		
+	case '#':
+		advance();
+		if (peek() == '#') {
+			advance();
+			Token.type = CONCAT;
+			parser();
+		}		
+		Token.type = SHARP;
+		parser();
+		break;
+	
 	case '^':
+		advance();
 		if (peek() == '=') {
-			next_char(); // consume
-			Token.type = 123;
+			advance(); // consume
+			Token.type = XOR_EQU;
+			parser();
 
 		}
 		else {
-			Token.type = 12;
+			Token.type = XOR;
+			parser();
 
 		}
+		break;
+	
+	case '|':
+		advance();
+		if (peek() == '=') {
+			advance(); // consume
+			Token.type = OR_EQU;
+			parser();
+
+		}
+		else {
+			Token.type = OR;
+			parser();
+
+		}
+		break;
+
+	case '&':
+		advance();
+		if (peek() == '=') {
+			advance(); // consume
+			Token.type = AND_EQU;
+			parser();
+
+		}
+		else {
+			Token.type = AND;
+			parser();
+
+		}
+		break;
+	
+	case '*':
+		advance();
+		if (peek() == '=') {
+			advance(); // consume
+			Token.type = MUL_EQU;
+			parser();
+
+		}
+		else {
+			Token.type = MUL;
+			parser();
+
+		}
+		break;
+
+	case '/':
+		advance();
+		if (peek() == '=') {
+			advance(); // consume
+			Token.type = DIV_EQU;
+			parser();
+
+		}
+		else {
+			Token.type = DIV;
+			parser();
+
+		}
+		break;
+	
+	case '>':
+		advance();
+		if (peek() == '>') {
+			advance(); // consume
+			if (peek() == '=') {
+				advance();
+				Token.type = SHIFTR_EQU;
+				parser();
+			}
+			else {
+				Token.type = SHIFTR;
+				parser();
+			}
+		}
+		else if (peek() == '=') {
+			advance(); // consume
+			Token.type = GT_EQU;
+			parser();
+
+		}
+		else {
+			Token.type = GT;
+			parser();
+
+		}
+		break;
+
+	case '.':
+		advance();
+		if (peek() == '.') {
+			advance(); // consume
+			if (peek() == '.') {
+				advance();
+				Token.type = THREE_DOT;
+				parser();
+			}
+			else {
+
+				exit_compiler();
+			}
+		} else {
+			Token.type = DOT;
+			parser();
+		}
+
+		break;
+
+	case '<':
+		advance();
+		if (peek() == '<') {
+			advance(); // consume
+			if (peek() == '=') {
+				advance();
+				Token.type = SHIFTL_EQU;
+				parser();
+			}
+			else {
+				Token.type = SHIFTL;
+				parser();
+			}
+		}
+		else if (peek() == '=') {
+			advance(); // consume
+			Token.type = LT_EQU;
+			parser();
+
+		}
+		else {
+			Token.type = LT;
+			parser();
+
+		}
+		break;
+
 
 	case '"':
+		advance();
 		string();
+		parser();
 		break;
-	case '\r':
+
+	case '\'':
+		advance();
+
 		break;
+
+
 	default:
 		if (is_digit(c)) {
 			number();
-			
+			parser();
 		}
-
 		else if (is_alpha(c)) {
-			identifier();			
+			identifier();
+			parser();
 		}
 		else {
 
 			exit_compiler();
 		}
+		
 		break;
 	}
 		
 	c = peek();
 	
 	if (c == EOF) {
+		
 
 	}
 	
 	goto lexer_loop;
 
-	FileReader.last_line = FileReader.pos;
-	FileReader.line++;
 	
-}
-
-
-
-
-void include_lexeme(IncludeStack** top, int c) {
-	
-	static char file_name[FILE_NAME_LEN];
-	
-	size_t pos = FileReader.pos - 1;
-	if (c == '#') {
-		int i = 0;
-		
-		while (c = next_char(&FileReader), c == ' ' || c == '\t');
-		
-		while (i < FILE_NAME_LEN - 1 && c != ' ' && c != '\t' && c != '"' && c != '<')file_name[i++] = c, c = next_char(&FileReader);
-		file_name[i] = '\0';		
-		i = 0;
-		if (strcmp(file_name, "include") == 0) {
-
-			while (c == ' ' || c == '\t')c = next_char(&FileReader);
-
-			if (c == '"') {
-
-				while (c = next_char(&FileReader), file_name[i++] = c, i < FILE_NAME_LEN - 1 && c != '\n' && c != '"');
-				file_name[i-1] = '\0'; // override "
-				
-				if (c != '"') {
-					printf("Include Directive File Name Does Not End With \"\n");
-					exit_compiler();
-				}
-					
-				while (c = next_char(&FileReader), c == ' ' || c == '\t');
-
-				if (c != '\n') {
-					printf("Include Directive Does Not End With New Line\n");
-					exit_compiler();
-				}
-
-				FileReader.line++;
-				push_file(top, file_name, &FileReader);
-
-				return;
-
-			} else if (c == '<') {
-
-				const char* stab = "include/";
-				memcpy(file_name, stab, strlen(stab));
-
-				while (c = next_char(&FileReader), file_name[i++] = c, i < FILE_NAME_LEN - 1 && c != '\n' && c != '>');
-				file_name[i - 1] = '\0'; // override >
-
-				if (c != '>') {
-					printf("Include Directive File Name Does Not End With >\n");
-					exit_compiler();
-				}
-
-				while (c = next_char(&FileReader), c == ' ' || c == '\t');
-
-				if (c != '\n') {
-					printf("Include Directive Does Not End With New Line\n");
-					exit_compiler();
-				}
-
-				FileReader.line++;
-				push_file(top, file_name, &FileReader);
-
-				return;
-
-			} else {
-				printf("Include Directive must continue with \" or < \n");
-				exit_compiler();
-			}
-
-		}
-	
-	}
-	
-	FileReader.pos = pos;
-
 }
 
 // adjust the .exe path and .c path
