@@ -8,101 +8,111 @@ void check_keyword() {
 	
 	int len = Token.index - 1;
 
-	if (len > longest)
+	if (len > longest || len == 1)
 		return;
 
 	switch (len) {
 	
 	case 2:
-		if (strcnmp(Token.lexeme, "if", 2) == 0)
+		if (strncmp(Token.lexeme, "if", 2) == 0)
 			Token.type = IF;
 		break;
-	
+		
+	case 3:
+		if (strncmp(Token.lexeme, "int", 3) == 0)
+			Token.type = INT;
+		break;
+
 	case 4:
-		if (strcnmp(Token.lexeme, "else", 4) == 0)
+		if (strncmp(Token.lexeme, "else", 4) == 0)
 			Token.type = ELSE;
-		else if (strcnmp(Token.lexeme, "case", 4) == 0)
+		else if (strncmp(Token.lexeme, "case", 4) == 0)
 			Token.type = CASE;
-		else if (strcnmp(Token.lexeme, "elif", 4) == 0)
+		else if (strncmp(Token.lexeme, "elif", 4) == 0)
 			Token.type = ELIF;
-		else if (strcnmp(Token.lexeme, "line", 4) == 0)
+		else if (strncmp(Token.lexeme, "line", 4) == 0)
 			Token.type = LINE;
-		else if (strcnmp(Token.lexeme, "true", 4) == 0)
+		else if (strncmp(Token.lexeme, "true", 4) == 0)
 			Token.type = TRUE;
-		else if (strcnmp(Token.lexeme, "bool", 4) == 0)
+		else if (strncmp(Token.lexeme, "bool", 4) == 0)
 			Token.type = BOOL;
-		else if (strcnmp(Token.lexeme, "auto", 4) == 0)
+		else if (strncmp(Token.lexeme, "auto", 4) == 0)
 			Token.type = AUTO;
-		else if (strcnmp(Token.lexeme, "long", 4) == 0)
+		else if (strncmp(Token.lexeme, "long", 4) == 0)
 			Token.type = LONG;		
 		break;
 	
 	case 5:
-		if (strcnmp(Token.lexeme, "while", 5) == 0)
+		if (strncmp(Token.lexeme, "while", 5) == 0)
 			Token.type = WHILE;
-		else if (strcnmp(Token.lexeme, "embed", 5) == 0)
+		else if (strncmp(Token.lexeme, "embed", 5) == 0)
 			Token.type = EMBED;
-		else if (strcnmp(Token.lexeme, "undef", 5) == 0)
+		else if (strncmp(Token.lexeme, "undef", 5) == 0)
 			Token.type = UNDEF;
-		else if (strcnmp(Token.lexeme, "error", 5) == 0)
+		else if (strncmp(Token.lexeme, "error", 5) == 0)
 			Token.type = ERROR;
-		else if (strcnmp(Token.lexeme, "endif", 5) == 0)
+		else if (strncmp(Token.lexeme, "endif", 5) == 0)
 			Token.type = ENDIF;
-		else if (strcnmp(Token.lexeme, "false", 5) == 0)
+		else if (strncmp(Token.lexeme, "false", 5) == 0)
 			Token.type = FALSE;
 		break;
 	
 	case 7:
-		if (strcnmp(Token.lexeme, "elifdef", 7) == 0)
+		if (strncmp(Token.lexeme, "elifdef", 7) == 0)
 			Token.type = ELIFDEF;
-		else if (strcnmp(Token.lexeme, "include", 7) == 0)
+		else if (strncmp(Token.lexeme, "include", 7) == 0)
 			Token.type = INCLUDE;
-		else if (strcnmp(Token.lexeme, "warning", 7) == 0)
+		else if (strncmp(Token.lexeme, "warning", 7) == 0)
 			Token.type = WARNING;
-		else if (strcnmp(Token.lexeme, "defined", 7) == 0)
+		else if (strncmp(Token.lexeme, "defined", 7) == 0)
 			Token.type = DEFINED;
-		else if (strcnmp(Token.lexeme, "alignas", 7) == 0)
+		else if (strncmp(Token.lexeme, "alignas", 7) == 0)
 			Token.type = ALIGNAS;
-		else if (strcnmp(Token.lexeme, "alignof", 7) == 0)
+		else if (strncmp(Token.lexeme, "alignof", 7) == 0)
 			Token.type = ALIGNOF;
-		else if (strcnmp(Token.lexeme, "typedef", 7) == 0)
+		else if (strncmp(Token.lexeme, "typedef", 7) == 0)
 			Token.type = TYPEDEF;
-		else if (strcnmp(Token.lexeme, "nullptr", 7) == 0)
+		else if (strncmp(Token.lexeme, "nullptr", 7) == 0)
 			Token.type = NULLPTR;
 		break;
 	
 	case 6:
-		if (strcnmp(Token.lexeme, "pragma", 6) == 0)
+		if (strncmp(Token.lexeme, "pragma", 6) == 0)
 			Token.type = PRAGMA;
-		else if (strcnmp(Token.lexeme, "extern", 6) == 0)
+		else if (strncmp(Token.lexeme, "extern", 6) == 0)
 			Token.type = EXTERN;
-		else if (strcnmp(Token.lexeme, "static", 6) == 0)
+		else if (strncmp(Token.lexeme, "static", 6) == 0)
 			Token.type = STATIC;
-		else if (strcnmp(Token.lexeme, "inline", 6) == 0)
+		else if (strncmp(Token.lexeme, "inline", 6) == 0)
 			Token.type = INLINE;
-		else if (strcnmp(Token.lexeme, "define", 6) == 0)
+		else if (strncmp(Token.lexeme, "define", 6) == 0)
 			Token.type = DEFINE;
 		break;
 	
 	case 8:
-		if (strcnmp(Token.lexeme, "elifndef", 8) == 0)
+		if (strncmp(Token.lexeme, "elifndef", 8) == 0)
 			Token.type = ELIFNDEF;
-		else if (strcnmp(Token.lexeme, "register", 8) == 0)
+		else if (strncmp(Token.lexeme, "register", 8) == 0)
 			Token.type = REGISTER;
-		else if (strcnmp(Token.lexeme, "restrict", 8) == 0)
+		else if (strncmp(Token.lexeme, "restrict", 8) == 0)
 			Token.type = RESTRICT;
 		break;
 	
 	case 9:
-		if (strcnmp(Token.lexeme, "constexpr", 9) == 0)
+		if (strncmp(Token.lexeme, "constexpr", 9) == 0)
 			Token.type = CONSTEXPR;
 		break;
 	
 	case 14:
-		if (strcnmp(Token.lexeme, "_STATIC_ASSERT", 14) == 0)
+		if (strncmp(Token.lexeme, "_STATIC_ASSERT", 14) == 0)
 			Token.type = _STATIC_ASSERT;
 		break;
 	
+	case 13:
+		if (strncmp(Token.lexeme, "STATIC_ASSERT", 13) == 0)
+			Token.type = STATIC_ASSERT;
+		break;
+
 	};
 
 }
