@@ -11,6 +11,7 @@ C compiler project designed to help programmers understand:
 * Windows x64 PE generation
 * minimal custom linker (dynamic linking only)
 * .exe and .dll output support
+  
 This project is built **for learning and research purposes**
 
 ---
