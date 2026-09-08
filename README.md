@@ -1,6 +1,5 @@
 # Educational C Compiler for Windows x64 
-*** (This is an ongoing Project - Features will be added gradually) ***
-
+***(This is an ongoing Project - Features will be added gradually)***
 # Purpose
 C compiler project designed to help programmers understand:
 * how compilers work internally
