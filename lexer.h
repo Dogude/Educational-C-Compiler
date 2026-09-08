@@ -28,11 +28,22 @@ struct FileReader {
 	int eof;
 };
 
+typedef struct IncludeStack {
+	FILE* file;
+	char* filename;
+	size_t pos;
+	size_t line;
+	size_t last_line;
+	struct IncludeStack* prev;
+} IncludeStack;
+
 enum Type {
 
 	/* literals */
 	IDENTIFIER,
 	STR,
+	CHAR32_STR,
+	CHAR16_T,
 	_CHAR,
 	CHAR32_T,
 	CHAR16_T,
@@ -48,16 +59,15 @@ enum Type {
 	
 	/* PREPROCESSOR */
 	DEFINE,
+	INCLUDE,
 	IFNDEF,
 	IFDEF,
-	PRE_IF,
 	ELIF,
-	PRE_ELSE,
 	ENDIF,
 	ELIFDEF,
 	ELIFNDEF,
 	UNDEF,
-	EMBED,
+	EMBED, EMBED_IF_EMPTY, EMBED_SUFFIX, EMBED_PREFIX,EMBED_LIMIT,
 	LINE,
 	ERROR,
 	WARNING,
@@ -65,6 +75,7 @@ enum Type {
 	SHARP,
 	CONCAT,
 	DEFINED,
+	NEW_LINE,
 
 	/* other */
 	EXTERN,
@@ -121,7 +132,6 @@ enum Type {
 	CONTINUE,
 	DEFAULT,
 	DO,
-	ELSE,
 	RETURN,
 	SWITCH,
 
@@ -180,19 +190,22 @@ enum Type {
 void exit_compiler();
 
 int is_digit(int c);
-int is_alpha(int c);
+int is_identifier(int c);
 int is_xdigit(int c);
 
 void print_line();
 void number();
 int peek();
 void identifier();
-void sharp_lex();
 void string();
+void lexer();
 
+void parser();
 
 extern struct Token Token;
 extern struct FileReader FileReader;
+extern IncludeStack* top;
+void push_file(IncludeStack** top, char* file_name);
 
 #define advance() FileReader.pos++
 
