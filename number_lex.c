@@ -1,48 +1,33 @@
 #include "lexer.h"
 
-enum NumberStates {
 
-	INTEGER,
-	USUFFIX,
-	LSUFFIX,
-	BINARY,
-	HEX,
-	OCTAL,
+void check_double() {
 
-	QUOTE,
-	AFTER_0,
-	NUMBER_FLAT,
-	SUCCESS
+	errno = 0;
+	// strtod();
+	// strtof();
 
-};
+}
 
-enum FloatNumberStates {
 
-	DOUBLE,
-	FLOAT,
-	LONG_DOUBLE
-
-};
-
-int f_number(int c, int index) {
+int fnumber() {
 
 	
 
 }
 
 void check_integer() {
-
 	
-
-	if (strlen(Token.lexeme) > 20) { // 64-bit unsigned long long
-		print_line();
-		printf("\n\nerror : number literal too big for unsigned long long");
-		exit_compiler();
-	}
-		
 	errno = 0;
 	unsigned long long val = strtoull(Token.lexeme, NULL, 0);
 	
+	if (errno == ERANGE) {
+		
+		exit_compiler();
+	}
+
+
+
 }
 
 void check_suffix() {
@@ -120,8 +105,7 @@ void check_suffix() {
 		break;
 
 	};
-		
-
+	
 }
 
 void number_binary() {
@@ -183,10 +167,44 @@ void number_hex() {
 		exit_compiler();
 	}
 	
+	Token.lexeme[Token.index] = '\0';
 	check_integer();
 	Token.type = INTEGER;
 	check_suffix();
 	
+}
+
+void number_flat() {
+
+	int c = peek();
+
+	while (is_digit(c)) {
+		Token.lexeme[Token.index++] = c;
+		advance();
+		if (peek() == '\'') {
+			advance();
+			if (!is_digit(peek())) {
+				c = 0x39; // '
+				break;
+			}
+			else {
+				Token.lexeme[Token.index++] = c;
+				advance();
+			}
+		}
+		c = peek();
+	}
+
+	if (c == '\'') {
+
+		exit_compiler();
+	}
+
+	Token.lexeme[Token.index] = '\0';
+	check_integer();
+	Token.type = INTEGER;
+	check_suffix();
+
 }
 
 void number_after_0() {
@@ -201,71 +219,51 @@ void number_after_0() {
 	else if (c == 'b' || c == 'B') {
 		advance();
 		Token.lexeme[Token.index++] = c;
-		Token.state = BINARY;
+		number_binary();
 	}
 	else if (c == '0') {
 		advance();
 		Token.lexeme[Token.index++] = c;
-		Token.state = NUMBER_FLAT;
+		number_flat();
 	}
 	else if (is_digit(c)) {
 		advance();
 		Token.lexeme[Token.index++] = c;
-		Token.state = OCTAL;
+		number_octal();
 	}		
 	
 }
 
+void number_octal() {
 
-inline int number_flat() {
+	int c = peek();
 
-	if (is_digit(c))
-		Token.lexeme[index] = c;
-
-	else if (c == 'u' || c == 'U') {
-
-
+	while (c >= '0' && c <= '7') {
+		Token.lexeme[Token.index++] = c;
+		advance();
+		if (peek() == '\'') {
+			advance();
+			if (c < '0' || c > '7') {
+				c = 0x39; // '
+				break;
+			}
+			else {
+				Token.lexeme[Token.index++] = c;
+				advance();
+			}
+		}
+		c = peek();
 	}
-	else if (c == 'l' || c == 'L') {
 
+	if (c == '\'') {
 
-	}
-	else if (is_identifier(c)) {
-		print_line();
-		printf("\n\nerror : number literal can not include '%c'", c);
 		exit_compiler();
 	}
-	else {
-		state = SUCCESS;
-	}
-	return state;
 
-}
-
-
-inline int number_octal(int c, int state, int index) {
-
-	if (c >= '0' && c <= '7')
-		Token.lexeme[index] = c;
-
-	else if (c == 'u' || c == 'U') {
-
-
-	}
-	else if (c == 'l' || c == 'L') {
-
-
-	}
-	else if (is_identifier(c) || c == '8' || c == '9') {
-		print_line();
-		printf("\n\nerror : can not include '%c' in octal number", c);
-		exit_compiler();
-	}
-	else {
-		state = SUCCESS;
-	}
-
-	return state;
+	Token.lexeme[Token.index] = '\0';
+	check_integer();
+	Token.type = INTEGER;
+	check_suffix();
 }
 
 void number() {
