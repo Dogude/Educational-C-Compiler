@@ -1,8 +1,9 @@
 #include "lexer.h"
 
+
 void check_keyword() {
 
-	/* may be switched to state of chars later */
+	/* may be switched to state of chars & hashing later */
 
 	int longest = sizeof("_STATIC_ASSERT") - 1;
 	
@@ -14,46 +15,46 @@ void check_keyword() {
 	switch (len) {
 	
 	case 2:
-		if (strncmp(Token.lexeme, "if", 2) == 0)
+		if (strcmp(Token.lexeme, "if") == 0)
 			Token.type = IF;
 		break;
 		
 	case 3:
-		if (strncmp(Token.lexeme, "int", 3) == 0)
+		if (strcmp(Token.lexeme, "int") == 0)
 			Token.type = INT;
 		break;
 
 	case 4:
-		if (strncmp(Token.lexeme, "else", 4) == 0)
+		if (strcmp(Token.lexeme, "else") == 0)
 			Token.type = ELSE;
-		else if (strncmp(Token.lexeme, "case", 4) == 0)
+		else if (strcmp(Token.lexeme, "case") == 0)
 			Token.type = CASE;
-		else if (strncmp(Token.lexeme, "elif", 4) == 0)
+		else if (strcmp(Token.lexeme, "elif") == 0)
 			Token.type = ELIF;
-		else if (strncmp(Token.lexeme, "line", 4) == 0)
+		else if (strcmp(Token.lexeme, "line") == 0)
 			Token.type = LINE;
-		else if (strncmp(Token.lexeme, "true", 4) == 0)
+		else if (strcmp(Token.lexeme, "true") == 0)
 			Token.type = TRUE;
-		else if (strncmp(Token.lexeme, "bool", 4) == 0)
+		else if (strcmp(Token.lexeme, "bool") == 0)
 			Token.type = BOOL;
-		else if (strncmp(Token.lexeme, "auto", 4) == 0)
+		else if (strcmp(Token.lexeme, "auto") == 0)
 			Token.type = AUTO;
-		else if (strncmp(Token.lexeme, "long", 4) == 0)
+		else if (strcmp(Token.lexeme, "long") == 0)
 			Token.type = LONG;		
 		break;
 	
 	case 5:
-		if (strncmp(Token.lexeme, "while", 5) == 0)
+		if (strcmp(Token.lexeme, "while") == 0)
 			Token.type = WHILE;
-		else if (strncmp(Token.lexeme, "embed", 5) == 0)
+		else if (strcmp(Token.lexeme, "embed") == 0)
 			Token.type = EMBED;
-		else if (strncmp(Token.lexeme, "undef", 5) == 0)
+		else if (strcmp(Token.lexeme, "undef") == 0)
 			Token.type = UNDEF;
-		else if (strncmp(Token.lexeme, "error", 5) == 0)
+		else if (strcmp(Token.lexeme, "error") == 0)
 			Token.type = ERROR;
-		else if (strncmp(Token.lexeme, "endif", 5) == 0)
+		else if (strcmp(Token.lexeme, "endif") == 0)
 			Token.type = ENDIF;
-		else if (strncmp(Token.lexeme, "false", 5) == 0)
+		else if (strcmp(Token.lexeme, "false") == 0)
 			Token.type = FALSE;
 		break;
 	
@@ -120,66 +121,177 @@ void check_keyword() {
 void name() {
 
 	int c = peek();
-	while (is_alpha(c)) {
-
+	
+	while (is_identifier(c)) {
 		if (Token.index >= LEXEME_SIZE - 1) {
 
 			exit_compiler();
 		}
-
 		Token.lexeme[Token.index++] = c;
 		advance();
 		c = peek();	
 	}
+		
+	Token.lexeme[Token.index] = '\0';
+	Token.type = IDENTIFIER;
+	check_keyword();
 
 }
 
 
-void c16_string() {
-
-
-
-}
-
+// handle utf8 to data segment
 void string() {
 
 	
 
-}
-
-
-void char32_tf() {
 
 
 
-}
 
-void c32_string() {
-
-
+	if (Token.state = STR_MOD)
+		Token.type = STR;
+	else if (Token.state == UTF8_MOD)
+		Token.type = UTF8_STR;
 
 }
 
-void char16_tf() {
+void file_str() {
+	
+	Token.index = 0;
+	int c = peek();
+	
+	while (c != '\n' && c != '"' && Token.index < 256) {			
+		Token.lexeme[Token.index++] = c;
+		advance();
+		c = peek();
+		if (c == '\\') {
+			Token.lexeme[Token.index] = c;
+			advance();
+			if (peek() == '\n')
+				advance();
+			else
+				Token.index++;
+		}
+	}
+	 
+	if (c != '"') {
 
+		exit_compiler();
+
+	}
+	
+	advance();
+	Token.lexeme[Token.index] = '\0';
+	Token.type = FILE_STR;
+
+}
+
+void char32_literal() {
+
+	Token.index = 0;
+	int c = peek();
+	
+}
+
+void char32_string() {
+
+
+}
+
+void char16_literal() {
+
+
+}
+
+void char16_string() {
 
 
 }
 
 void wide_string() {
 	
-	Token.index = 0;
+	
+}
+
+
+void char_literal() {
+
 
 }
 
-void identifier() {
+void wide_char() {
+
+
+
+}
+
+void u_literals() {
 
 	int c = peek();
+	
+	enum { INITAL , UTF8 };
+	int u_state = INITAL; // base case
+
+	while (1) {
+		switch (u_state) {
+
+		case INITAL:
+			switch (c) {
+			case '"':
+				advance();
+				char16_string();
+				return;
+			case '\'':
+				advance();
+				char16_literal();
+				return;
+			case '8':
+				u_state = UTF8;
+				break;
+			default:
+				Token.lexeme[Token.index++] = c;
+				advance();
+				name();
+				return;
+			};
+			break;
+
+		case UTF8:
+			switch (c) {
+			case '"':
+				advance();
+				Token.state = UTF8_MOD;
+				string(); // both "" and u8"" are utf8 strings
+				Token.state = STR_MOD;
+				return;
+			case '\'':
+				Token.state = UTF8_MOD;
+				char_literal();
+				Token.state = STR_MOD;
+				return;
+			default:
+				Token.lexeme[Token.index++] = c;
+				advance();
+				name();
+				return;
+			};
+			break;
+		};
+
+		c = peek();
+	} // end while
+
+
+}
+
+void str_literals() {
 
 	Token.index = 0;
 
+	int c = peek();
+	
 	switch (c) {
-
+	
 	case 'L':
 		Token.lexeme[Token.index++] = c;
 		advance();
@@ -188,7 +300,8 @@ void identifier() {
 			wide_string();
 		}
 		else if (peek() == '\'') {
-			
+			advance();
+			wide_char();
 		}
 		else {
 			name();
@@ -198,29 +311,7 @@ void identifier() {
 	case 'u':
 		Token.lexeme[Token.index++] = c;
 		advance();
-		if (peek() == '"') {
-			advance();
-			c16_string();
-		}
-		else if (peek() == '\'') {
-			advance();
-			char16_tf();
-		}
-		else if (peek() == '8') {
-			advance();
-			if (peek() == '"') {
-				advance();
-
-			}
-			else if (peek() == '\'') {
-				advance();
-				
-			}
-		}
-		else {
-			name();
-
-		}
+		u_literals();
 		break;
 	
 	case 'U':
@@ -228,18 +319,16 @@ void identifier() {
 		advance();
 		if (peek() == '"') {
 			advance();
-			c32_string();
+			char32_string();
 		}
 		else if (peek() == '\'') {
 			advance();
-			char32_tf();
-
+			char32_literal();
 		}
 		else {
 			name();
 		}
 		break;
-
 	};
 	
 }
