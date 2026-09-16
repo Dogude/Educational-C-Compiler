@@ -1,5 +1,10 @@
 # Educational C Compiler for Windows x64 
 ***(This is an ongoing Project - Features will be added gradually)***
+# Current Situation:
+- Fix lexer
+- Understand utf8 binary logic
+- Construct PE file Data Segment Size Allocation Logic(Follow File Alignment Rules - multiple of 0x200)
+
 # Purpose
 C compiler project designed to help programmers understand:
 * how compilers work internally
