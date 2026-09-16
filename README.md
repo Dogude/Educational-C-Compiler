@@ -1,7 +1,7 @@
 # Educational C Compiler for Windows x64 
 ***(This is an ongoing Project - Features will be added gradually)***
 # Current Situation:
-- Fix lexer
+- Implement all types of lexeme's
 - Understand utf8 binary logic
 - Construct PE file Data Segment Size Allocation Logic(Follow File Alignment Rules - multiple of 0x200)
 
