@@ -24,23 +24,40 @@ void check_keyword() {
 			Token.type = INT;
 		break;
 
+	
 	case 4:
-		if (strcmp(Token.lexeme, "else") == 0)
-			Token.type = ELSE;
-		else if (strcmp(Token.lexeme, "case") == 0)
-			Token.type = CASE;
-		else if (strcmp(Token.lexeme, "elif") == 0)
-			Token.type = ELIF;
-		else if (strcmp(Token.lexeme, "line") == 0)
-			Token.type = LINE;
-		else if (strcmp(Token.lexeme, "true") == 0)
-			Token.type = TRUE;
-		else if (strcmp(Token.lexeme, "bool") == 0)
-			Token.type = BOOL;
-		else if (strcmp(Token.lexeme, "auto") == 0)
-			Token.type = AUTO;
-		else if (strcmp(Token.lexeme, "long") == 0)
-			Token.type = LONG;		
+		switch (Token.lexeme[0]) {
+		case 'e':
+			if (strcmp(Token.lexeme, "else") == 0)
+				Token.type = ELSE;
+			else if (strcmp(Token.lexeme, "elif") == 0)
+				Token.type = ELIF;
+			break;
+		case 'c':
+			if (strcmp(Token.lexeme, "case") == 0)
+				Token.type = CASE;
+			break;
+		case 'l':
+			if (strcmp(Token.lexeme, "line") == 0)
+				Token.type = LINE;
+			else if (strcmp(Token.lexeme, "long") == 0)
+				Token.type = LONG;
+			break;
+		case 't':
+			if (strcmp(Token.lexeme, "true") == 0)
+				Token.type = TRUE;
+			break;
+		case 'b':
+			if (strcmp(Token.lexeme, "bool") == 0)
+				Token.type = BOOL;
+			break;
+
+		case 'a':
+			if (strcmp(Token.lexeme, "auto") == 0)
+				Token.type = AUTO;
+			break;
+		};
+
 		break;
 	
 	case 5:
