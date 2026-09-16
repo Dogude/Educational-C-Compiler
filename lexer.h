@@ -5,7 +5,6 @@
 #include <errno.h>
 
 #define CHUNK_SIZE 4096 
-#define FILE_NAME_LEN 256
 #define LEXEME_SIZE 1024
 
 struct Token {
@@ -37,29 +36,37 @@ typedef struct IncludeStack {
 	struct IncludeStack* prev;
 } IncludeStack;
 
+
+enum TokenState {
+
+	FILE_MOD,
+	STR_MOD	
+};
+
 enum Type {
 
-	/* literals */
+	/* literals */	
 	IDENTIFIER,
 	STR,
 	CHAR32_STR,
-	CHAR16_T,
-	_CHAR,
-	CHAR32_T,
-	CHAR16_T,
-	LSTR,
-	ULL,
-	LL,
-	L,
-	U,
-	INTEGER,
-	_DOUBLE,
-	_FLOAT,
-	_LONG_DOUBLE,
+	CHAR_LITERAL,
+	CHAR32_LITERAL,
+	CHAR16_LITERAL,
+	UTF8_LITERAL,
+	UTF8_STR,
+	ULL_LITERAL,
+	LL_LITERAL,
+	UL_LITERAL,
+	L_LITERAL,
+	U_LITERAL,
+	INTEGER_LITERAL,
+	DOUBLE_LITERAL,
+	FLOAT_LITERAL,
+	LONG_DOUBLE_LITERAL,
 	
 	/* PREPROCESSOR */
 	DEFINE,
-	INCLUDE,
+	INCLUDE, FILE_STR,
 	IFNDEF,
 	IFDEF,
 	ELIF,
@@ -183,7 +190,8 @@ enum Type {
 	_ALIGNOF,
 	ALIGNOF,
 
-	SEMICOLOMN
+	SEMICOLOMN,
+	COMMA
 
 };
 
@@ -196,14 +204,17 @@ int is_xdigit(int c);
 void print_line();
 void number();
 int peek();
-void identifier();
+void str_literals();
 void string();
+void file_str();
+void char_literal();
 void lexer();
 
 void parser();
 
 extern struct Token Token;
 extern struct FileReader FileReader;
+
 extern IncludeStack* top;
 void push_file(IncludeStack** top, char* file_name);
 
