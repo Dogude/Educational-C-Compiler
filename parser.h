@@ -1,29 +1,18 @@
 #pragma once
 #include "lexer.h"
 
-typedef enum {
-    SYM_VARIABLE,
-    SYM_TYPEDEF,
-    SYM_FUNCTION,
-    SYM_STRUCT,
-    SYM_ENUM,
-    SYM_LABEL
-} SymbolKind;
-
 enum ParserState {
-
     START,
     PREPROCESSOR,
     EMBED_DIRECTIVE,
-
+    PRAGMA_DIRECTIVE
 };
 
 int state;
 struct Scope *current_scope;
 
 struct Symbol {
-    char* name;              
-    SymbolKind kind;         
+    char* name;                     
     int type;                
     int offset;              
 };
