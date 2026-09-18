@@ -1,6 +1,77 @@
 #include "lexer.h"
 
-#define FILE_ALIGN 0x200
+#define FILE_ALIGN 0x200      // FileAlignment = 512 byte
+#define MAX_ALIGN 0x7fffffff // 2  GB
+
+
+unsigned char dos_header[64] = {
+// Offset 0x00000000 to 0x0000003F
+0x4D, 0x5A, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
+0xFF, 0xFF, 0x00, 0x00, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0xF0, 0x00, 0x00, 0x00
+
+};
+
+typedef unsigned int UINT;
+typedef unsigned short USHORT;
+typedef unsigned char UCHAR;
+typedef unsigned long long ULONG;
+
+
+struct PE {
+    
+    // COFF Header
+    UINT Signature;
+    USHORT Machine;
+    USHORT NumberOfSections;
+    UINT TimeDateStamp;
+    UINT PointerToSymbolTable;
+    UINT NumberOfSymbolTable;
+    USHORT SizeOfOptionalHeader;
+    USHORT Characteristics;
+    
+    // Standard COFF Fields
+    USHORT Magic;
+    UCHAR MajorLinkerVersion;
+    UCHAR MinorLinkerVersion;
+    UINT SizeOfCode;
+    UINT SizeOfInitializedData;
+    UINT SizeOfUninitializedData;
+    UINT AddressOfEntryPoint;
+    UINT BaseOfCode;
+    UINT BaseOfData;
+
+    // Windows Specific Fields
+    UINT ImageBase;  // switch to 64bit , delete BaseOfData
+    UINT SectionAlignment;
+    UINT FileAlignment;
+    USHORT MajorOperatingSystemVersion;
+    USHORT MinorOperatingSystemVersion;
+    USHORT MajorImageVersion;
+    USHORT MinorImageVersion;
+    USHORT MajorSubsystemVersion;
+    USHORT MinorSubsystemVersion;
+    UINT Win32VersionValue; // zeros filled
+    UINT SizeOfImage;
+    UINT SizeOfHeaders;
+    UINT CheckSum;
+    USHORT Subsystem; // GUI or Console
+    USHORT DllCharacteristics;
+    UINT SizeOfStackReserve;  // switch to 64bit
+    UINT SizeOfStackCommit;  // switch to 64bit
+    UINT SizeOfHeapReserve;  // switch to 64bit
+    UINT SizeOfHeapCommit; // switch to 64bit
+    UINT LoaderFlags; // Zeros filled
+    UINT NumberOfRvaAndSizes;
+
+
+
+
+} PE;
+
 
 struct section_bss {
     // name 8 bytes , ".bss\0\0\0\0"
@@ -81,6 +152,16 @@ struct eDATA {
 
 
 void alloc_pe() {
+    
+    TEXT.data = malloc(FILE_ALIGN);
+    if (!TEXT.data) {
+
+
+        exit_compiler();
+    }
+
+    TEXT.cap = FILE_ALIGN;
+    
 
     DATA.data = malloc(FILE_ALIGN);
     if (!DATA.data) {
@@ -88,8 +169,19 @@ void alloc_pe() {
 
         exit_compiler();
     }
-
+    
     DATA.cap = FILE_ALIGN;
+
+
+    eDATA.data = malloc(FILE_ALIGN);
+    
+    if (!eDATA.data) {
+
+
+        exit_compiler();
+    }
+
+    eDATA.cap = FILE_ALIGN;
     
 }
 
@@ -102,11 +194,15 @@ void write_to_data(int val) {
     }
     else {
 
-        int new_cap = DATA.cap + FILE_ALIGN;
+        unsigned int new_cap = DATA.cap + FILE_ALIGN;
+        if (new_cap > MAX_ALIGN) {
 
+            // single section can not exceed 2gb
+            exit_compiler();
+        }
+        
         void* temp = realloc(DATA.data, new_cap);
         if (!temp) {
-
 
             exit_compiler();
         }
@@ -114,9 +210,36 @@ void write_to_data(int val) {
         DATA.data = temp;
         DATA.cap = new_cap;
         DATA.data[DATA.len++] = val;
-
     }
 
+}
+
+void write_to_text(int val) {
+
+    if (TEXT.len < TEXT.cap) {
+
+        TEXT.data[TEXT.len++] = val;
+
+    }
+    else {
+
+        unsigned int new_cap = TEXT.cap + FILE_ALIGN;
+        if (new_cap > MAX_ALIGN) {
+
+            // single section can not exceed 2gb
+            exit_compiler();
+        }
+
+        void* temp = realloc(TEXT.data, new_cap);
+        if (!temp) {
+
+            exit_compiler();
+        }
+
+        TEXT.data = temp;
+        TEXT.cap = new_cap;
+        TEXT.data[TEXT.len++] = val;
+    }
 
 }
 
