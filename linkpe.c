@@ -20,9 +20,9 @@ typedef unsigned short USHORT;
 typedef unsigned char UCHAR;
 typedef unsigned long long ULONG;
 
-
 struct PE {
-    
+
+    // 32 bit Structure of PE 
     // COFF Header
     UINT Signature;
     USHORT Machine;
@@ -68,10 +68,34 @@ struct PE {
     UINT NumberOfRvaAndSizes;
 
 
-
+    // DataDirectories
+    UINT ExportTable; // RVA    
+    UINT SizeOfExportTable;
+    UINT ImportTable;
+    UINT ResourceTable;
+    UINT SizeOfResourceTable;
+    UINT ExceptionTable;
+    UINT SizeOfExceptionTable;
+    UINT CertificateTable;
+    UINT SizeOfCertificateTable;
+    UINT BaseRelocationTable;
+    UINT SizeOfBaseRelocationTable;
+    UINT GlobalPtr; UINT ZERO1;
+    UINT TLSTable;
+    UINT SizeOfTLSTable;
+    UINT LoadConfigTable;
+    UINT SizeOfLoadConfigTable;    
+    UINT BoundImport;
+    UINT SizeOfBoundImport;
+    UINT ImportAddressTable;
+    UINT SizeOfImportAddressTable;
+    UINT DelayImportDescriptor;
+    UINT SizeOfDelayImportDescriptor;
+    UINT CLRRuntimeHeader;
+    UINT SizeOfCLRRuntimeHeader;
+    UINT ZERO2; UINT ZERO3;
 
 } PE;
-
 
 struct section_bss {
     // name 8 bytes , ".bss\0\0\0\0"
@@ -130,26 +154,13 @@ struct section_edata {
 // len for VirtualSize
 
 // text segment read exec
-struct TEXT {   
-    unsigned char* data;
-    int len;
-    int cap;
-} TEXT;
+struct TEXT TEXT;
 
 // data segment read write
-struct DATA {  
-    unsigned char* data;
-    int len;
-    int cap;
-} DATA;
+struct DATA DATA;
 
 // edata segment , read
-struct eDATA {
-    unsigned char* data;
-    int len;
-    int cap;
-} eDATA;
-
+struct eDATA eDATA;
 
 void alloc_pe() {
     
@@ -159,28 +170,21 @@ void alloc_pe() {
 
         exit_compiler();
     }
-
     TEXT.cap = FILE_ALIGN;
     
-
     DATA.data = malloc(FILE_ALIGN);
     if (!DATA.data) {
 
-
         exit_compiler();
-    }
-    
+    }   
     DATA.cap = FILE_ALIGN;
 
-
     eDATA.data = malloc(FILE_ALIGN);
-    
     if (!eDATA.data) {
 
 
         exit_compiler();
     }
-
     eDATA.cap = FILE_ALIGN;
     
 }
@@ -193,20 +197,17 @@ void write_to_data(int val) {
 
     }
     else {
-
         unsigned int new_cap = DATA.cap + FILE_ALIGN;
         if (new_cap > MAX_ALIGN) {
 
             // single section can not exceed 2gb
             exit_compiler();
-        }
-        
+        }      
         void* temp = realloc(DATA.data, new_cap);
         if (!temp) {
 
             exit_compiler();
         }
-
         DATA.data = temp;
         DATA.cap = new_cap;
         DATA.data[DATA.len++] = val;
@@ -222,23 +223,47 @@ void write_to_text(int val) {
 
     }
     else {
-
         unsigned int new_cap = TEXT.cap + FILE_ALIGN;
         if (new_cap > MAX_ALIGN) {
 
             // single section can not exceed 2gb
             exit_compiler();
         }
-
         void* temp = realloc(TEXT.data, new_cap);
         if (!temp) {
 
             exit_compiler();
         }
-
         TEXT.data = temp;
         TEXT.cap = new_cap;
         TEXT.data[TEXT.len++] = val;
+    }
+
+}
+
+void write_to_edata(int val) {
+
+    if (eDATA.len < eDATA.cap) {
+
+        eDATA.data[eDATA.len++] = val;
+
+    }
+    else {
+        unsigned int new_cap = eDATA.cap + FILE_ALIGN;
+        if (new_cap > MAX_ALIGN) {
+
+            // single section can not exceed 2gb
+            exit_compiler();
+        }
+
+        void* temp = realloc(eDATA.data, new_cap);
+        if (!temp) {
+
+            exit_compiler();
+        }
+        eDATA.data = temp;
+        eDATA.cap = new_cap;
+        eDATA.data[eDATA.len++] = val;
     }
 
 }
