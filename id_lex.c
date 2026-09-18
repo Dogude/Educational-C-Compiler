@@ -24,7 +24,6 @@ void check_keyword() {
 			Token.type = INT;
 		break;
 
-	
 	case 4:
 		switch (Token.lexeme[0]) {
 		case 'e':
@@ -161,15 +160,6 @@ void string() {
 
 	
 
-
-
-
-
-	if (Token.state = STR_MOD)
-		Token.type = STR;
-	else if (Token.state == UTF8_MOD)
-		Token.type = UTF8_STR;
-
 }
 
 void file_str() {
@@ -234,6 +224,7 @@ void wide_string() {
 void char_literal() {
 
 
+
 }
 
 void wide_char() {
@@ -277,14 +268,12 @@ void u_literals() {
 			switch (c) {
 			case '"':
 				advance();
-				Token.state = UTF8_MOD;
+				Token.type = UTF8_STR;
 				string(); // both "" and u8"" are utf8 strings
-				Token.state = STR_MOD;
 				return;
 			case '\'':
-				Token.state = UTF8_MOD;
-				char_literal();
-				Token.state = STR_MOD;
+				Token.type = UTF8_LITERAL;
+				char_literal(); // both '' and u8'' are utf8 char literals
 				return;
 			default:
 				Token.lexeme[Token.index++] = c;
@@ -298,9 +287,9 @@ void u_literals() {
 		c = peek();
 	} // end while
 
-
 }
 
+// may be continue as identifier
 void str_literals() {
 
 	Token.index = 0;
