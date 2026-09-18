@@ -1,19 +1,39 @@
 #include "lexer.h"
 
-
 void check_double() {
 
 	errno = 0;
-	// strtod();
-	// strtof();
+	double dval;
+	float fval;
 
+	switch (Token.type) {
+
+	case DOUBLE_LITERAL:
+		dval = strtod(Token.lexeme, NULL, 0);
+		if (errno == ERANGE) {
+			
+			exit_compiler();
+		}
+		// write to data segment
+		break;
+
+	case FLOAT_LITERAL:
+		fval = strtof(Token.lexeme, NULL, 0);
+		if (errno == ERANGE) {
+
+			exit_compiler();
+		}
+		// write to data segment
+
+		break;
+
+	};
+	
 }
-
 
 int fnumber() {
 
 	
-
 }
 
 void check_integer() {
@@ -21,12 +41,20 @@ void check_integer() {
 	errno = 0;
 	unsigned long long val = strtoull(Token.lexeme, NULL, 0);
 	
-	if (errno == ERANGE) {
-		
+	if (errno == ERANGE) {	
 		exit_compiler();
-	}
+	}	
 
+	Token.number_size = 8;
 
+	if (val <= 0xffffffff)
+		Token.number_size = 4;
+	if (val <= 0xffff)
+		Token.number_size = 2;
+	if (val <= 0xff)
+		Token.number_size = 1;
+		
+	memcpy(&val,Token.number,Token.number_size);
 
 }
 
@@ -36,57 +64,49 @@ void check_suffix() {
 	
 	suffix:
 	switch (Token.type) {
-	case INTEGER:
+	case INTEGER_LITERAL:
 		switch (c) {
 		case 'l':
-		case 'L':
+		case 'L': // 12L
 			advance();
-			Token.type = L;
-			c = peek();
-			goto suffix;
+			Token.type = L;			
 			break;
 		case 'u':
-		case 'U':
+		case 'U': //12u
 			advance();
 			Token.type = U;
-			c = peek();
-			goto suffix;
-			break;
-		};
-		break;
-	case U:
-		switch (c) {
-		case 'L':
-		case 'l':
-			advance();
-			Token.type = UL;
-			c = peek();
-			goto suffix;
 			break;
 		};
 		break;
 	
-	case L:
+	case U: // 12uL
+		switch (c) {
+		case 'L':
+		case 'l':
+			advance();
+			Token.type = UL;
+			break;
+		};
+		break;
+	
+	case L: // 12lu
 		switch (c) {
 		case 'U':
 		case 'u':
 			advance();
 			Token.type = UL;
-			return;
-			
+			return;			
 		case 'l':
-		case 'L':
+		case 'L': // 12ll
 			advance();
 			Token.type = LL;
-			c = peek();
-			goto suffix;
-			break;
-		
+			break;	
 		};
 		break;
+
 	case LL:
 		switch (c) {
-		case 'U':
+		case 'U': // 12llu
 		case 'u':
 			advance();
 			Token.type = ULL;
@@ -96,7 +116,7 @@ void check_suffix() {
 
 	case UL:
 		switch (c) {
-		case 'L':
+		case 'L': // 12ull
 		case 'l':
 			advance();
 			Token.type = ULL;		
@@ -105,6 +125,9 @@ void check_suffix() {
 		break;
 
 	};
+
+	c = peek();
+	goto suffix;
 	
 }
 
@@ -134,10 +157,10 @@ void number_binary() {
 		exit_compiler();
 	}
 
-	Token.lexeme[Token.index] = '\0';
-	check_integer();
+	Token.lexeme[Token.index] = '\0';	
 	Token.type = INTEGER;
 	check_suffix();
+	check_integer();
 
 }
 
@@ -168,9 +191,9 @@ void number_hex() {
 	}
 	
 	Token.lexeme[Token.index] = '\0';
-	check_integer();
 	Token.type = INTEGER;
 	check_suffix();
+	check_integer();
 	
 }
 
@@ -201,37 +224,47 @@ void number_flat() {
 	}
 
 	Token.lexeme[Token.index] = '\0';
-	check_integer();
 	Token.type = INTEGER;
 	check_suffix();
-
+	check_integer();
 }
 
 void number_after_0() {
 
 	int c = peek();
-		
-	if (c == 'x' || c == 'X') {
+	
+	switch (c) {
+	case 'x':
+	case 'X':
 		advance();
 		Token.lexeme[Token.index++] = c;
 		number_hex();
-	}
-	else if (c == 'b' || c == 'B') {
+		break;
+	case 'b':
+	case 'B':
 		advance();
 		Token.lexeme[Token.index++] = c;
 		number_binary();
-	}
-	else if (c == '0') {
+		break;
+	case '0':
 		advance();
 		Token.lexeme[Token.index++] = c;
 		number_flat();
-	}
-	else if (is_digit(c)) {
+		break;
+	case '.':
 		advance();
 		Token.lexeme[Token.index++] = c;
-		number_octal();
-	}		
-	
+		fnumber();
+		break;
+	default:
+		if (is_digit(c)) {
+			advance();
+			Token.lexeme[Token.index++] = c;
+			number_octal();
+		}
+		break;
+	};
+
 }
 
 void number_octal() {
@@ -261,9 +294,9 @@ void number_octal() {
 	}
 
 	Token.lexeme[Token.index] = '\0';
-	check_integer();
 	Token.type = INTEGER;
 	check_suffix();
+	check_integer();
 }
 
 void number() {
@@ -277,6 +310,7 @@ void number() {
 		Token.lexeme[Token.index++] = c;
 		number_after_0();
 	}
+
 	else {
 		advance();
 		Token.lexeme[Token.index++] = c;
