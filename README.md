@@ -3,7 +3,7 @@
 # Current Situation:
 - Implement all types of lexeme's
 - Understand utf8 binary logic
-- Construct PE file Data Segment Size Allocation Logic(Follow File Alignment Rules - multiple of 0x200)
+- Enhance parser data structures
 
 # Purpose
 C compiler project designed to help programmers understand:
