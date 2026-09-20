@@ -4,56 +4,61 @@ struct Token Token;
 struct FileReader FileReader;
 IncludeStack* top = NULL;
 
-void push_file(IncludeStack** top, char* file_name) {
-			
-	char* fname = malloc(strlen(file_name) + 1);
-	if (!fname) {
-		printf("Not Enough Memory for Includes\n");
-		exit_compiler();
-	}
 
-	memcpy(fname, file_name, strlen(file_name) + 1);
-		
-	FILE *file = fopen(fname, "rb");
+
+/* may be switched to mmap */
+void push_file(IncludeStack** top, char* file_name) {
+	
+	long long index = _ftelli64(FileReader.file);
+	fclose(FileReader.file); // close previous file
+	FILE *file = fopen(file_name, "rb");
 
 	if (!file) {
-		printf("Include File Not Found : %s\n",fname);
+		printf(COLOR_ERROR "Include File Not Found : %s\n" COLOR_RESET, file_name);
 		exit_compiler();
 	}
-	
+
+	FileReader.file = file;
+		
 	IncludeStack *node = malloc(sizeof(IncludeStack));
 	
 	if (!node) {
 		printf("Not Enough Memory for Includes\n");
 		exit_compiler();
 	}
+
+	memcpy(node->filename, file_name, Token.index);
 	
-	node->file = file;
-	FileReader.file = node->file;
-	node->filename = fname;
-	node->prev = NULL;
-	
-	if (*top == NULL) {		
+	if (*top == NULL) {	
+		node->prev = NULL;
 		*top = node;
 	} else {
-		(*top)->pos = FileReader.pos;
-		(*top)->line = FileReader.line;
-		(*top)->last_line = FileReader.last_line;
+		node->fpos = index;
+		node->line = FileReader.line;
+		node->last_line = FileReader.last_line;		
 		node->prev = *top;
 		*top = node;
 	}
 	
-	FileReader.pos = 0;
 	FileReader.line = 1;
 	FileReader.last_line = 0;
-
+	FileReader.size = 0;
 }
 
 void pop_file(IncludeStack** top) {
 
+	IncludeStack* temp = *top;
+	*top = temp->prev;
+	if (*top) {
+		long long index = (*top)->fpos;
+		FileReader.file = fopen((*top)->filename, "rb"); // open previous file
+		FileReader.last_line = (*top)->last_line;
+		FileReader.line = (*top)->line;	
+		_fseeki64(FileReader.file, index, 0);
+		FileReader.size = 0;
+	}
 
-
-
+	free(temp);
 }
 
 int peek() {
