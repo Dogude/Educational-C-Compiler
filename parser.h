@@ -1,24 +1,31 @@
 #pragma once
 #include "lexer.h"
 
+extern IncludeStack* top;
+void push_file(IncludeStack** top, char* file_name);
+void lexer();
+
 enum ParserState {
     START,
     PREPROCESSOR,
     EMBED_DIRECTIVE,
-    PRAGMA_DIRECTIVE
+    PRAGMA_DIRECTIVE,
+    EXPR_STATE
 };
 
-int state;
-struct Scope *current_scope;
-
-struct Symbol {
+typedef struct Symbol {
     char* name;                     
-    int type;                
-    int offset;              
-};
+    unsigned int type;                
+    int offset;
+    size_t number;
+    
+} sym;
 
-struct Scope {
-    struct Symbol** table;
-    struct Scope* parent;
-};
+typedef struct SymbolContext {
+    size_t size;
+    size_t capacity;
+    sym * head;
+    int state;
+} ctx ;
+
 
