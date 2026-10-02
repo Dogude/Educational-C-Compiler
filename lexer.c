@@ -156,12 +156,12 @@ int is_identifier() {
 	
 	if (cp < 0x80) return 0;
 
-	if (cp >= 0x2600 && cp <= 0x27BF) return 0; // Genel Semboller, Dingbats (etc, heart U+2665)
-	if (cp >= 0x1F000 && cp <= 0x1FFFF) return 0; // Emojiler (Gülen yüzler vb.)
+	if (cp >= 0x2600 && cp <= 0x27BF) return 0; // General Symbols, Dingbats (etc, heart U+2665)
+	if (cp >= 0x1F000 && cp <= 0x1FFFF) return 0; // Emojis (smiley faces, etc.)
 	if (cp >= 0xD800 && cp <= 0xDFFF) return 0; // Surrogate pairs
-	if (cp >= 0xFE00 && cp <= 0xFE0F) return 0; // Varyasyon Seçiciler (Kalbin 2. parçası U+FE0F buraya takılır)
+	if (cp >= 0xFE00 && cp <= 0xFE0F) return 0; // Variation Selectors (U+FE0F)
 
-	// 4. Geriye kalan üst aralıklar genelde uluslararası harflerdir (Çince, Kiril vb.)
+	// The remaining upper ranges generally consist of international characters (Chinese etc.).
 	if (cp <= 0x10FFFF) {
 		return 1;
 	}
