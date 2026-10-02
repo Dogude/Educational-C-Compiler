@@ -5,12 +5,17 @@
 - Implement UTF-8 multi-byte decoding logic
 - Enhance parser data structures
 
-# Roadmap  
-[x] Lexer -> Improve token struct  
-[ ] Parser -> Follow cppreference as a source  
-[ ] Code generation -> heap managed stack based expression evaluator with state machine parser   
-[ ] X64 opcode -> Emit native x64 opcode bytes into memory buffers  
-[ ] PE linker -> implement PE sections allocation strategy  
+### 1. Lexical Analysis (`lexer.h`,`lexer.c`, `id_lex.c`, `num_lex.c`)
+* **State:** Under Active Development.
+* **Details:** Implements robust UTF-8 multi-byte decoding logic and state-machine-driven tokenization for all standard C lexemes, minimizing allocation overhead during scanning.
+
+### 2. Syntax & Expression Parsing (`parser.c`)
+* **State:** Under Active Development.
+* **Details:** Designing a heap-managed, stack-based expression evaluator driven by a formal state-machine parser. The grammar tracking strictly follows `cppreference` specifications to guarantee compliance.
+
+### 3. Executable Generation & Linker (`link_pe.c`, `sections.h`)
+* **State:** Architecture & Layout Defined.
+* **Details:** Implementing a custom, minimal Windows PE (.exe / .dll) linker pipeline. Current work focuses on COFF/PE section allocation strategies, structural alignment rules, and defining the Import Address Table (IAT) layout for dynamic FFI linking.
 
 
 # Purpose
