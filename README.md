@@ -8,7 +8,7 @@
 # Roadmap
 
 [x] Lexer -> Improve token struct  
-[ ] Parser -> Follow cppreference as a source 
+[ ] Parser -> Follow cppreference as a source  
 [ ] Code generation -> heap managed stack based expression evaluator with state machine parser   
 [ ] X64 opcode -> write a necessary opcodes as char array  
 [ ] PE linker -> implement PE sections allocation strategy  
