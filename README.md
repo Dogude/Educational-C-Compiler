@@ -5,6 +5,14 @@
 - Understand utf8 binary logic
 - Enhance parser data structures
 
+# Roadmap
+[x] Lexer -> Improve token struct 
+[~] Parser -> Follow cppreference as a source  
+[~] Code generation -> heap managed stack based expression evaluator with state machine parser    
+[~] X64 opcode -> write a necessary opcodes as char array
+[~] PE linker -> implement PE sections allocation strategy
+
+
 # Purpose
 C compiler project designed to help programmers understand:
 * how compilers work internally
