@@ -34,7 +34,7 @@ This project is built **for learning and research purposes**
 
 ---
 
-# Historical Context
+# Historical Context of C
 
 C evolved from earlier typeless languages such as **BCPL** and **B**.
 The B language treated variables as machine words without explicit types, which limited safety and expressiveness.
