@@ -5,9 +5,9 @@
 - Implement UTF-8 multi-byte decoding logic
 - Enhance parser data structures
 
-[\] Lexer : Fix utf8 handling errors  
-[\] Parser : Dynamic extending vector improvements  
-[\] linkpe & sections : Align Windows PE structures correctly and Import Address Table & Export Address Table  
+[/] Lexer : Fix utf8 handling errors  
+[/] Parser : Dynamic extending vector improvements  
+[/] linkpe & sections : Align Windows PE structures correctly and Import Address Table & Export Address Table  
 
 # Purpose
 C compiler project designed to help programmers understand:
