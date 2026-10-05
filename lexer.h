@@ -15,6 +15,8 @@ unsigned int check_utf8();
 void free_pe();
 void alloc_pe();
 
+
+
 #define CHUNK_SIZE (4096 * 2)
 #define LEXEME_SIZE 1024
 #define MAX_STR_LEN (1024 * 1024)
@@ -27,19 +29,8 @@ void alloc_pe();
 #define COLOR_ACADEMIC  "\033[95m"       // Academic Purple
 #define COLOR_RESET     "\033[0m"   
 
-typedef struct Token {	
-	
-	union {
-		size_t integral;
-		double float2;
-		float float1;
-	};
 
-	enum Type type;
-
-} Token;
-
-struct FileReader {
+typedef struct {
 	FILE* file;
 	unsigned char *buffer;
 	size_t line;
@@ -47,20 +38,114 @@ struct FileReader {
 	size_t pos;
 	size_t size;
 	int eof;
-};
+} FileInfo;
 
 typedef struct IncludeStack {
 	char filename[FILE_LEN];
 	size_t fpos;
 	size_t line;
 	size_t last_line;	
-	struct IncludeStack* prev;
 } IncludeStack;
+
+typedef struct  {
+
+	IncludeStack *head;
+	size_t size;
+	size_t capacity;
+	FileInfo file;
+
+} IncludeContext;
+
+void parser(IncludeContext * inc);
+
+typedef struct Token {	
+
+	union {
+		size_t c1;
+		double c2;
+		float c3;
+		int precedence;
+		unsigned int index;
+	} info ;
+
+	int type;
+
+} Token;
+
 
 enum LexemeState {
 
 	FILE_MOD,
 	STR_MOD	
+};
+
+enum Precedence {
+
+    // L    
+    PRECEDENCE_COMMA,
+    // L
+
+    // R
+	PRECEDENCE_XOR_EQU = 1,
+	PRECEDENCE_OR_EQU = 1,
+	PRECEDENCE_AND_EQU = 1,
+	PRECEDENCE_SHIFTR_EQU = 1,
+    PRECEDENCE_SHIFTL_EQU = 1,
+    PRECEDENCE_MUL_EQU = 1,
+    PRECEDENCE_DIV_EQU = 1,
+    PRECEDENCE_MOD_EQU = 1,
+    PRECEDENCE_PLUS_EQU = 1, 
+    PRECEDENCE_MINUS_EQU = 1,
+    PRECEDENCE_ASSIGN = 1,
+    PRECEDENCE_COLOMN = 6,
+	PRECEDENCE_QUESTION = 6,
+	// R
+
+	// L
+	PRECEDENCE_LOGICAL_OR = 7,
+	PRECEDENCE_LOGICAL_AND = 8,
+	PRECEDENCE_OR = 9,
+	PRECEDENCE_XOR = 10,
+	PRECEDENCE_AND = 11,
+	PRECEDENCE_NOT_CMP = 12,
+    PRECEDENCE_CMP = 12,
+    PRECEDENCE_GT_EQU = 13,
+    PRECEDENCE_GT = 13,
+    PRECEDENCE_LT_EQU = 13,
+	PRECEDENCE_LT = 13,  
+    PRECEDENCE_SHIFTR = 14,	
+	PRECEDENCE_SHIFTL = 14,
+	PRECEDENCE_MINUS = 15,
+    PRECEDENCE_PLUS = 15,
+	PRECEDENCE_MOD = 16,
+	PRECEDENCE_DIV = 16,
+	PRECEDENCE_MUL = 16,	
+	// L
+
+	// R
+	PRECEDENCE_ALIGNOF = 25,
+	PRECEDENCE__ALIGNOF = 25,
+	PRECEDENCE_SIZEOF = 25,	
+	PRECEDENCE_INVERT = 25,		
+	PRECEDENCE_NOT = 25,
+	PRECEDENCE_UNARY_PLUS = 25,
+	PRECEDENCE_UNARY_MINUS = 25,
+	PRECEDENCE_DEREF = 25,
+	PRECEDENCE_PRE_MINUS_MINUS = 25,
+	PRECEDENCE_PRE_PLUS_PLUS = 25,
+	// R
+	
+	// L
+	PRECEDENCE_POST_MINUS_MINUS = 26,
+	PRECEDENCE_POST_PLUS_PLUS = 26,
+	PRECEDENCE_ARROW = 26,
+	PRECEDENCE_DOT = 26,
+	PRECEDENCE_OPEN_BRACKET =26 ,
+	PRECEDENCE_CLOSET_BRACKET = 26,
+	PRECEDENCE_OPEN_PAR = 26,
+	PRECEDENCE_CLOSE_PAR = 26,
+	// L
+
 };
 
 typedef enum Type {
@@ -147,7 +232,7 @@ typedef enum Type {
 	VOID,
 	GENERIC,
 	NO_RETURN,
-
+	
 	/* instructions */
 	WHILE,
 	FOR,
@@ -162,18 +247,16 @@ typedef enum Type {
 	RETURN,
 	SWITCH,
 
-	/* Operators */
-	PLUS,
+	THREE_DOT,
+
+	SEMICOLOMN,
+
+	/* Operators */	
 	PLUS_EQU,
-	MINUS,
 	MINUS_EQU,
-	ARROW,
 	ASSIGN,
 	CMP,
-	DOT,
-	DIV,
 	DIV_EQU,
-	MUL,
 	MUL_EQU,
 	AND,
 	AND_EQU,
@@ -187,10 +270,7 @@ typedef enum Type {
 	SHIFTR_EQU,
 	SHIFTL,
 	SHIFTL_EQU,
-	MOD,
 	MOD_EQU,
-	INVERT,
-	NOT,
 	LOGICAL_AND,
 	LOGICAL_OR,
 	NOT_CMP,
@@ -198,20 +278,34 @@ typedef enum Type {
 	LT,
 	GT_EQU,
 	LT_EQU,
-	OPEN_PAR,
-	CLOSE_PAR,
-	OPEN_BRACKET,
-	CLOSET_BRACKET,
-	THREE_DOT,
-	COMMA,
 	QUESTION,
 	COLOMN,
-	SIZEOF,
-	_ALIGNOF,
+	PLUS,
+	MINUS,
+	MOD,
+	DIV,
+	MUL,	
 	ALIGNOF,
+	_ALIGNOF,
+	SIZEOF,	
+	INVERT,		
+	NOT,
+	ARROW,
+	DOT,
+	OPEN_BRACKET,
+	CLOSET_BRACKET,
+	OPEN_PAR,
+	CLOSE_PAR,
 
-	SEMICOLOMN,
-	COMMA
+	COMMA,
+	
+	UNARY_PLUS,
+	UNARY_MINUS,
+	DEREF,
+	PRE_MINUS_MINUS,
+	PRE_PLUS_PLUS,
+	POS_PLUS_PLUS,
+	POST_MINUS_MINUS,
 
 } Type;
 
@@ -221,9 +315,4 @@ int is_identifier_continue();
 int is_xdigit(int c);
 void print_line();
 int peek();
-
-extern struct Token Token;
-extern struct FileReader FileReader;
-
-#define advance() FileReader.pos++
 
