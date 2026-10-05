@@ -6,7 +6,7 @@
 - Enhance parser data structures
 
 [/] Lexer : Fix utf8 handling errors  
-[/] Parser : Dynamic extending vector improvements  
+[/] Parser : Dynamic extending vector improvements & index based symbol access  
 [/] linkpe & sections : Align Windows PE structures correctly and Import Address Table & Export Address Table  
 
 # Purpose
