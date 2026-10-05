@@ -90,65 +90,6 @@ void release_include(IncludeStack* c) {
 }
 
 
-/* may be switched to mmap */
-void push_file(IncludeStack** top, char* file_name) {
-	
-	long long index;
-
-	if (*top) {
-		index = _ftelli64(FileReader.file);
-		fclose(FileReader.file); // close previous file		
-	}
-	
-	FILE* file = fopen(file_name, "rb");
-
-	if (!file) {
-		printf(COLOR_ERROR "Include File Not Found : %s\n" COLOR_RESET, file_name);
-		exit_compiler();
-	}
-
-	FileReader.file = file;
-
-	IncludeStack *node = malloc(sizeof(IncludeStack));
-
-	if (!node) {
-		printf("Not Enough Memory for Includes\n");
-		exit_compiler();
-	}
-
-	memcpy(node->filename, file_name, Token.index);	
-
-	if (*top == NULL) {	
-		node->prev = NULL;		
-	} else {
-		node->fpos = index;
-		node->line = FileReader.line;
-		node->last_line = FileReader.last_line;		
-		node->prev = *top;		
-	}
-
-	*top = node;
-	FileReader.line = 1;
-	FileReader.last_line = 0;
-	FileReader.size = 0;
-}
-
-void pop_file(IncludeStack** top) {
-
-	IncludeStack* temp = *top;
-	*top = temp->prev;
-	if (*top) {
-		long long index = (*top)->fpos;
-		FileReader.file = fopen((*top)->filename, "rb"); // open previous file
-		FileReader.last_line = (*top)->last_line;
-		FileReader.line = (*top)->line;	
-		_fseeki64(FileReader.file, index, 0);
-		FileReader.size = 0;
-	}
-
-	free(temp);
-}
-
 int _peek() {
 		
 	if (FileReader.pos < FileReader.size ) {
