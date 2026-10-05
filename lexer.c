@@ -2,16 +2,101 @@
 
 #define VER "0.90.0"
 
-extern void parser();
-struct Token Token;
-struct FileReader FileReader;
-IncludeStack* top = NULL;
+#define INCLUDE_INIT 4
+#define INCLUDE_GROW 2
+
+void init_include(IncludeContext *c , const char * main_file) {
+
+	IncludeStack * p = malloc(sizeof(IncludeStack) * INCLUDE_INIT);
+	if (!p) {
+		printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
+		exit_compiler();
+	}
+
+	c->head = p;
+	c->size = 0;
+	c->capacity = INCLUDE_INIT;
+
+	FILE * file = fopen(main_file, "rb");	
+	if(!file){
+
+		exit_compiler();
+	}
+
+	
+
+	unsigned char *chunk = malloc(CHUNK_SIZE);
+
+	if (!chunk) {
+
+		exit_compiler();
+	}
+	
+	c->file.buffer = chunk;
+
+}
+
+void push_include(IncludeContext* c , const char * file) {
+	
+	if (c->size < c->capacity) {	
+		size_t i = c->size;
+		memcpy(&c->head[i], s, sizeof(sym));
+		c->size++;
+	}
+	else {
+		size_t new_cap = c->size * INCLUDE_GROW;
+		void* ptr = realloc(c->head, new_cap * sizeof(sym));
+		if (!ptr) {
+			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
+			exit_compiler();
+		}
+
+		c->head = ptr;
+		size_t i = c->size;
+		memcpy(&c->head[i], s, sizeof(sym));
+		c->size++;
+		c->capacity = new_cap;
+	}
+		
+}
+
+void pop_include(IncludeStack* c , sym * s) {
+	
+	if (c->size < c->capacity) {	
+		size_t i = c->size;
+		memcpy(&c->head[i], s, sizeof(sym));
+		c->size++;
+	}
+	else {
+		size_t new_cap = c->size * SymbolVectorGrow;
+		void* ptr = realloc(c->head, new_cap * sizeof(sym));
+		if (!ptr) {
+			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
+			exit_compiler();
+		}
+
+		c->head = ptr;
+		size_t i = c->size;
+		memcpy(&c->head[i], s, sizeof(sym));
+		c->size++;
+		c->capacity = new_cap;
+	}
+		
+}
+
+void release_include(IncludeStack* c) {
+	
+	free(c->head);
+}
+
 
 /* may be switched to mmap */
 void push_file(IncludeStack** top, char* file_name) {
 	
-	if (top) {
-		long long index = _ftelli64(FileReader.file);
+	long long index;
+
+	if (*top) {
+		index = _ftelli64(FileReader.file);
 		fclose(FileReader.file); // close previous file		
 	}
 	
@@ -34,16 +119,15 @@ void push_file(IncludeStack** top, char* file_name) {
 	memcpy(node->filename, file_name, Token.index);	
 
 	if (*top == NULL) {	
-		node->prev = NULL;
-		*top = node;
+		node->prev = NULL;		
 	} else {
 		node->fpos = index;
 		node->line = FileReader.line;
 		node->last_line = FileReader.last_line;		
-		node->prev = *top;
-		*top = node;
+		node->prev = *top;		
 	}
-	
+
+	*top = node;
 	FileReader.line = 1;
 	FileReader.last_line = 0;
 	FileReader.size = 0;
@@ -93,29 +177,37 @@ void invalid_byte() {
 int peek() {
 
 	while (_peek() == '\\') {
-		int next = (FileReader.pos + 1) < FileReader.size ? FileReader.buffer[FileReader.pos] : _peek();
-		if (next == '\n') {
-			FileReader.pos += 2;
+		FileReader.pos++;
+		if ( _peek() == '\n') {
+			FileReader.pos++;
 		}
-		else {
-			break;
+		else {		
+			return '\\';
 		}
 	}
 
+	while (_peek() == ' ' || _peek() == '\t' || _peek() == '\r') {
+		FileReader.pos++;	
+	}
+
 	int cp = 0;
-	int c = _peek(0);
-	if ((c & 0x80) == 0x00) {
+	int c = _peek();
+	
+	if(c == EOF)
+		return c;
+
+	if ((c & 0x80) == 0x00) {	
 		cp = c;
 	}
 	else if ((c & 0xE0) == 0xC0) {
-		int c2 = _peek(1);
+		int c2 = _peek();
 		if (c2 == EOF)
 			invalid_byte();
 		cp = ((c & 0x1F) << 6) | (c2 & 0x3F);
 	}
 	else if ((c & 0xF0) == 0xE0) {
-		int c2 = _peek(1);
-		int c3 = _peek(2);
+		int c2 = _peek();
+		int c3 = _peek();
 		if (c2 == EOF || c3 == EOF)
 			invalid_byte();
 		cp = ((c & 0x0F) << 12) |
@@ -123,10 +215,14 @@ int peek() {
 			(c3 & 0x3F);
 	}
 	else if ((c & 0xF8) == 0xF0) {
-		int c2 = _peek(1);
-		int c3 = _peek(2);
-		int c4 = _peek(3);
-		if (c2 == EOF || c3 == EOF || c4 == EOF)
+		int c2 = _peek();
+		if (c2 == EOF)
+			invalid_byte();
+		int c3 = _peek();
+		if (c3 == EOF)
+			invalid_byte();
+		int c4 = _peek();
+		if (c4 == EOF)
 			invalid_byte();
 		cp = ((c & 0x07) << 18) |
 			((c2 & 0x3F) << 12) |
@@ -142,26 +238,33 @@ int peek() {
 	return cp;
 }
 	
+
+void advance() {
+
+
+
+}
+
 int is_digit(int c) {
 	return c >= '0' && c <= '9';
 }
 
 int is_identifier() {
 
-	unsigned int cp = check_utf8();
-
+	unsigned int cp = peek();
+	
 	if ((cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z') || cp == '_') {
 		return 1;
 	}
 	
 	if (cp < 0x80) return 0;
 
-	if (cp >= 0x2600 && cp <= 0x27BF) return 0; // General Symbols, Dingbats (etc, heart U+2665)
-	if (cp >= 0x1F000 && cp <= 0x1FFFF) return 0; // Emojis (smiley faces, etc.)
+	if (cp >= 0x2600 && cp <= 0x27BF) return 0; // Genel Semboller, Dingbats (etc, heart U+2665)
+	if (cp >= 0x1F000 && cp <= 0x1FFFF) return 0; // Emojiler (Gülen yüzler vb.)
 	if (cp >= 0xD800 && cp <= 0xDFFF) return 0; // Surrogate pairs
-	if (cp >= 0xFE00 && cp <= 0xFE0F) return 0; // Variation Selectors (U+FE0F)
+	if (cp >= 0xFE00 && cp <= 0xFE0F) return 0; // Varyasyon Seçiciler (Kalbin 2. parçası U+FE0F buraya takılır)
 
-	// The remaining upper ranges generally consist of international characters (Chinese etc.).
+	// 4. Geriye kalan üst aralıklar genelde uluslararası harflerdir (Çince, Kiril vb.)
 	if (cp <= 0x10FFFF) {
 		return 1;
 	}
@@ -170,7 +273,8 @@ int is_identifier() {
 }
 
 int is_identifier_continue() {
-	if (peek() >= '0' && peek() <= '9') return 1;
+	int c = peek();
+	if (c >= '0' && c <= '9') return 1;
 	return is_identifier();
 }
 
@@ -206,49 +310,40 @@ void exit_compiler() {
 }
 
 // fill token area in parser
-void lexer(struct Token* t) {
+void lexer(struct Token *t) {
 
-	while (peek() == ' ' || peek() == '\t' || peek() == '\r') {
-		advance();
-	}
-	
 	switch (peek()) {
-
 	case ',':
-		advance();
-		Token.type == COMMA;
+		t->type == COMMA;
 		break;
-
 	case '(':
-		advance();
-		Token.type = OPEN_PAR;
+		t->type = OPEN_PAR;
 		break;
 	case ')':
-		advance();
-		Token.type = CLOSE_PAR;
+		t->type = CLOSE_PAR;
 		break;
 	case '+':
-		advance();
 		if (peek() == '+') {
-			advance(); // consume
-			Token.type = PLUS_PLUS;
+			t->type = PLUS_PLUS;
+			t->precedence = PRECEDENCE_PRE_MINUS_MINUS;
 		}
 		else {
-			Token.type = PLUS;				
+			t->type = PLUS;
+			t->precedence = PRECEDENCE_PLUS;					
 		}
 		break;
 	case '-':
 		advance();
 		if (peek() == '-') {
 			advance(); // consume
-			Token.type = MINUS_MINUS;
+			t->type = MINUS_MINUS;
 		}
 		else if (peek() == '=') {
 			advance();
-			Token.type = MINUS_EQU;
+			t->type = MINUS_EQU;
 		}
 		else {
-			Token.type = MINUS;
+			t->type = MINUS;
 		}
 		
 		break;
@@ -256,16 +351,16 @@ void lexer(struct Token* t) {
 		advance();
 		if (peek() == '=') {
 			advance();
-			Token.type = MOD_EQU;
+			t->type = MOD_EQU;
 		}
 		else {
-			Token.type = MOD;
+			t->type = MOD;
 		}
 		break;
 	
 	case '?':
 		advance();
-		Token.type = QUESTION;
+		t->type = QUESTION;
 		break;		
 	case '\n':
 		FileReader.last_line = FileReader.pos;
@@ -429,40 +524,16 @@ void lexer(struct Token* t) {
 // adjust the .exe path and .c path
 void _start(const char ** source, int len) {
 	
-	Token.lexeme = malloc(LEXEME_SIZE);	
-	if (!Token.lexeme) {
-
-		exit_compiler();
-	}
-
-	FileReader.buffer = malloc(CHUNK_SIZE);
-	
-	if (!FileReader.buffer) {
-
-		exit_compiler();
-	}
-	
 	alloc_pe();
 
+	IncludeContext inc;
+	init_include(&inc);
 
 	for (int i = 0; i < len; i++) {
 		push_file(&top, source[i]);
-		parser();
+		parser(&inc);
 	}
 		
-}
-
-struct Files {
-
-	char** list;
-	int len;
-
-};
-
-void construct_files() {
-
-
-
 }
 
 int main(int argc , char * argv[]) {
@@ -470,7 +541,7 @@ int main(int argc , char * argv[]) {
 	if (argc == 2 && strcmp(argv[1], "*.c") == 0) {
 
 		struct Files f = {0};
-		construct_files(&f);
+		// construct_files(&f);
 		_start(f.list,f.len);
 
 	}
