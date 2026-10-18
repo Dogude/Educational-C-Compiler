@@ -182,15 +182,15 @@ struct section {
 };
 // PE Management
 
-static int hash_function(const unsigned char *str);
+int hash_function(const unsigned char *str);
 void exit_compiler();
 
 typedef struct IncludeStack {
 	unsigned char * source;
 	int len;
 	int fpos;
-	int line;
-	int last_line;	
+	int line; // count new lines
+	int last_line;	// hold position of last new line 
 } IncludeStack;
 
 typedef struct IncludeContext {
@@ -210,15 +210,16 @@ typedef struct TokenContext {
 } TokenContext;
 
 typedef struct Symbol {
-   
+	
 	union {
         TokenContext token ; // for C Macros
-        int offset;
+        int mem_offset;
         size_t c1;
         double c2;
         float c3;
     } info ; 
-
+	
+	int pool_offset;
     int type;
 
 } sym;
@@ -230,7 +231,7 @@ typedef struct SymbolContext{
     int state; // parser state for all
 } SymbolContext;
 
-void parser(IncludeContext * inc);
+void parser(IncludeContext *inc);
 void pragma_directive(SymbolContext* c);
 void embed_directive(SymbolContext* c);
 
@@ -265,7 +266,7 @@ typedef struct Token {
 		double c2;
 		float c3;
 		int precedence;
-		int index;
+		int sym_index; // requires for expr eval stack, parser fills that 
 	} info ;
 
 	int type;
