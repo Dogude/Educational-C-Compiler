@@ -5,30 +5,34 @@
 
 #define VER "0.90.0"
 
-#define MAX_NAME_LEN 512
-#define EXPR_STACK 256
-
-#define CHUNK_SIZE (4096 * 2)
-#define LEXEME_SIZE 1024
-#define MAX_STR_LEN (1024 * 1024)
-#define FILE_LEN 128
-
-#define FILE_ALIGN 0x200      // FileAlignment = 512 byte
-#define MAX_ALIGN 0x7fffffff // 2 GB
+#define COLOR_ERROR     "\033[91m"  // red, critical
+#define COLOR_SUCCESS   "\033[92m"  // green, approve
+#define COLOR_INFO      "\033[94m"  // blue, knowledge
+#define COLOR_PRIMARY    "\033[38;5;202m" // Primary, hint
+#define COLOR_ACADEMIC  "\033[95m"       // Academic Purple
+#define COLOR_RESET     "\033[0m"   
 
 // allocations
-#define TEXT_SIZE (256*1024)
-#define DATA_SIZE (128*1024)
-#define EDATA_SIZE 512
+#define TEXT (256*1024)
+#define TEXT_GROW 2 // until 8 mb then linear grow(+2 mb)
+#define DATA (256*1024)
+#define DATA_GROW 2 // until 8mb then linear grow(+2 mb)
+#define EAT 512
 
 #define INCLUDE_INIT 32
 #define INCLUDE_GROW 2
 
-#define SymbolVectorInit (4 * 1024)
-#define SymbolVectorGrow 2
+#define SYMBOL_VECTOR_INIT (8 * 1024)
+#define SYMBOL_VECTOR_GROW 2
 
-#define MacroVectorInit 8
-#define MacroVectorGrow 2
+#define MACRO_VECTOR_INIT 16
+#define MACRO_VECTOR_GROW 2
+
+#define IDENTIFIER_POOL_INIT (256 * 1024)
+#define IDENTIFIER_POOL_GROW 2
+
+#define EXPR_STACK 256
+#define EXPR_STACK_GROW 2
 // allocations
 
 
@@ -44,36 +48,24 @@ unsigned char dos_header[64] = {
 
 };
 
+struct PEContext {
+	
+	unsigned char* text_data;
+    int text_len;
+    int text_cap; 
+
+	unsigned char* r_data;
+    int r_len;
+    int r_cap; 
+
+};
+
+
 typedef unsigned int UINT;
 typedef unsigned short USHORT;
 typedef unsigned char UCHAR;
 typedef unsigned long long ULONG;
 typedef unsigned short uint16_t;
-
-// len for VirtualSize
-// text segment read exec
-struct TEXT {
-    unsigned char* data;
-    struct TEXT* next;
-    int len;
-    int cap; 
-};
-
-// data segment read write
-struct DATA {
-    unsigned char* data;
-    struct DATA* next;
-    int len;
-    int cap;
-};
-
-// edata segment read
-struct eDATA {
-    unsigned char* data;
-    struct eDATA* next;
-    int len;
-    int cap; 
-};
 
 #pragma pack(push, 1)
 struct PE {
@@ -177,7 +169,7 @@ struct PE {
 #pragma pack(pop)
 
 struct section {
-   // name 8 bytes
+    // name 8 bytes
     unsigned int VirtualSize;
     unsigned int VirtualAddress;
     unsigned int SizeOfRawData;
@@ -188,26 +180,9 @@ struct section {
     unsigned short NumberOfLinenumbers;
     unsigned int Characteristics;
 };
-
-struct SectionBody {
-
-    struct TEXT* root_t;
-    struct DATA* root_d;
-    struct eDATA* root_e;
-
-} SectionBody;
 // PE Management
 
-
-#define COLOR_ERROR     "\033[91m"  // red, critical
-#define COLOR_SUCCESS   "\033[92m"  // green, approve
-#define COLOR_INFO      "\033[94m"  // blue, knowledge
-#define COLOR_PRIMARY    "\033[38;5;202m" // Primary, hint
-#define COLOR_ACADEMIC  "\033[95m"       // Academic Purple
-#define COLOR_RESET     "\033[0m"   
-
-
-static unsigned int hash_function(const unsigned char *str);
+static int hash_function(const unsigned char *str);
 void exit_compiler();
 
 typedef struct IncludeStack {
@@ -226,17 +201,17 @@ typedef struct IncludeContext {
 
 void pop_include(IncludeContext * c);
 void release_include(IncludeContext* c);
-void invalid_byte();
 
 // parser
 typedef struct TokenContext {
 	struct Token *head;
-	unsigned int size;
-	unsigned int capacity;		
+	int size;
+	int capacity;		
 } TokenContext;
 
 typedef struct Symbol {
-    union {
+   
+	union {
         TokenContext token ; // for C Macros
         int offset;
         size_t c1;
@@ -244,7 +219,7 @@ typedef struct Symbol {
         float c3;
     } info ; 
 
-    unsigned int type;
+    int type;
 
 } sym;
 
@@ -252,7 +227,7 @@ typedef struct SymbolContext{
     int size;
     int capacity;
     sym * head;
-    int state;
+    int state; // parser state for all
 } SymbolContext;
 
 void parser(IncludeContext * inc);
@@ -264,7 +239,7 @@ enum ParserState {
     PREPROCESSOR,
     EMBED_DIRECTIVE,
     PRAGMA_DIRECTIVE,
-    EXPR_STATE,OPERAND,OPERATOR
+    EXPR_STATE, OPERAND, OPERATOR
 };
 
 enum SymbolType {
@@ -290,18 +265,12 @@ typedef struct Token {
 		double c2;
 		float c3;
 		int precedence;
-		unsigned int index;
+		int index;
 	} info ;
 
 	int type;
 
 } Token;
-
-enum LexemeState {
-
-	FILE_MOD,
-	STR_MOD	
-};
 
 enum Precedence {
 
@@ -541,7 +510,7 @@ int is_identifier();
 int is_identifier_continue();
 // lexer end
 
-static unsigned int hash_function(const unsigned char *str ) {
+static unsigned int hash_function(const unsigned char *str) {
     unsigned int hash = 5381;
     int c;
     while ((c = *str++)) {
