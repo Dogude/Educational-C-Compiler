@@ -35,7 +35,6 @@
 #define EXPR_STACK_GROW 2
 // allocations
 
-
 // PE Management
 unsigned char dos_header[64] = {
 // PE (50 45 00 00) starts in 64th (0x40)
@@ -47,19 +46,6 @@ unsigned char dos_header[64] = {
 0x40, 0x00, 0x00, 0x00
 
 };
-
-struct PEContext {
-	
-	unsigned char* text_data;
-    int text_len;
-    int text_cap; 
-
-	unsigned char* r_data;
-    int r_len;
-    int r_cap; 
-
-};
-
 
 typedef unsigned int UINT;
 typedef unsigned short USHORT;
@@ -116,7 +102,6 @@ struct PE {
     UINT SizeOfHeapCommit; // switch to 64bit
     UINT LoaderFlags; // Zeros filled
     UINT NumberOfRvaAndSizes; // 0x10 
-
 
     // DataDirectories   
     UINT ExportTable; // RVA    
@@ -182,7 +167,6 @@ struct section {
 };
 // PE Management
 
-int hash_function(const unsigned char *str);
 void exit_compiler();
 
 typedef struct IncludeStack {
@@ -190,13 +174,33 @@ typedef struct IncludeStack {
 	int len;
 	int fpos;
 	int line; // count new lines
-	int last_line;	// hold position of last new line 
+	int last_line;	// hold position of last new line 	
 } IncludeStack;
 
 typedef struct IncludeContext {
 	IncludeStack *head;
 	int size;
 	int capacity;
+
+	// symbol name buffer
+	unsigned char *identifier_pool;
+	int len;
+	int cap;
+
+	// pe buffers
+	unsigned char* text_data;
+    int text_len;
+    int text_cap; 
+
+	unsigned char* r_data;
+    int r_len;
+    int r_cap; 
+
+	unsigned char* e_data;
+    int e_len;
+    int e_cap; 
+	// pe buffers
+
 } IncludeContext;
 
 void pop_include(IncludeContext * c);
@@ -218,19 +222,21 @@ typedef struct Symbol {
         double c2;
         float c3;
     } info ; 
-	
+
+	unsigned int hash;	
 	int pool_offset;
     int type;
 
 } sym;
 
-typedef struct SymbolContext{
+typedef struct SymbolContext {
     int size;
     int capacity;
     sym * head;
     int state; // parser state for all
 } SymbolContext;
 
+int hash_function(SymbolContext * s , const unsigned char *str);
 void parser(IncludeContext *inc);
 void pragma_directive(SymbolContext* c);
 void embed_directive(SymbolContext* c);
@@ -347,12 +353,13 @@ typedef enum Type {
 	/* literals */	
 	IDENTIFIER,
 	STR,
+	UTF8_STR,
+	CHAR16_STR,	
 	CHAR32_STR,
 	CHAR_LITERAL,
+	UTF8_LITERAL,	
+	CHAR16_LITERAL,	
 	CHAR32_LITERAL,
-	CHAR16_LITERAL,
-	UTF8_LITERAL,
-	UTF8_STR,
 	ULL_LITERAL,
 	LL_LITERAL,
 	UL_LITERAL,
@@ -511,13 +518,14 @@ int is_identifier();
 int is_identifier_continue();
 // lexer end
 
-static unsigned int hash_function(const unsigned char *str) {
+int hash_function(SymbolContext * s, const unsigned char *str) {
     unsigned int hash = 5381;
     int c;
     while ((c = *str++)) {
         hash = ((hash << 5) + hash) + c;
     }
-    return hash % 123; 
+
+    return hash % s->capacity; 
 }
 
 void init_include(IncludeContext *c , const char *main_file) {
@@ -549,14 +557,13 @@ void init_include(IncludeContext *c , const char *main_file) {
 	}
 
 	fread(source,1,size,file);
+	fclose(file);
 
 	c->head->source = source;
 	c->head->fpos = 0;
 	c->head->last_line = 0;
 	c->head->line = 0;
 	c->head->len = size;
-
-	fclose(file);
 
 }
 
@@ -572,9 +579,8 @@ void push_include(IncludeContext* c , const char * file) {
 	long size = ftell(f);	
 	unsigned char *source = malloc(size);
 	
-	if(!source){
-		
-		
+	if(!source) {
+
 		exit_compiler();
 	}
 
@@ -608,6 +614,7 @@ void push_include(IncludeContext* c , const char * file) {
 
 void pop_include(IncludeContext * c) {
 	
+	free(c->head->source); // release file char array
 	c->size--;
 
 }
@@ -626,16 +633,17 @@ void invalid_byte() {
 
 }
 
-/* real peek  */
-int peek() {
+int peek(IncludeContext * s) {
 
-	int cp = 0;
-	int c = _peek();
-	
-	return c;
+	int len = s->head->len;
+	int pos = s->head->fpos;
+	return pos < len ? s->head->source[pos] : EOF;
+
 }
 	
-void advance() {
+void advance(IncludeContext * s) {
+
+	int c = peek(s);
 
 	if ((c & 0x80) == 0x00) {	
 		cp = c;
@@ -718,149 +726,11 @@ int is_xdigit(int c) {
 		(c >= '0' && c <= '9');
 }
 
+void check_keyword(IncludeContext * c , Token *t) {
 
-void check_keyword(Token *t);
-/*
-void check_keyword(Token *t) {
-
-	// may be switched to state of chars & hashing later
-
-	int longest = sizeof("_STATIC_ASSERT") - 1;
 	
-	int len = Token.index - 1;
-
-	if (len > longest || len == 1)
-		return;
-
-	switch (len) {
-	
-	case 2:
-		if (strcmp(Token.lexeme, "if") == 0)
-			Token.type = IF;
-		break;
-		
-	case 3:
-		switch (Token.lexeme[0]) {
-		case 'i':
-			if (strcmp(Token.lexeme, "int") == 0)
-				Token.type = INT;
-			break;
-		};
-		break;
-	
-	case 4:
-		switch (Token.lexeme[0]) {
-		case 'e':
-			if (strcmp(Token.lexeme, "else") == 0)
-				Token.type = ELSE;
-			else if (strcmp(Token.lexeme, "elif") == 0)
-				Token.type = ELIF;
-			break;
-		case 'c':
-			if (strcmp(Token.lexeme, "case") == 0)
-				Token.type = CASE;
-			break;
-		case 'l':
-			if (strcmp(Token.lexeme, "line") == 0)
-				Token.type = LINE;
-			else if (strcmp(Token.lexeme, "long") == 0)
-				Token.type = LONG;
-			break;
-		case 't':
-			if (strcmp(Token.lexeme, "true") == 0)
-				Token.type = TRUE;
-			break;
-		case 'b':
-			if (strcmp(Token.lexeme, "bool") == 0)
-				Token.type = BOOL;
-			break;
-
-		case 'a':
-			if (strcmp(Token.lexeme, "auto") == 0)
-				Token.type = AUTO;
-			break;
-		};
-
-		break;
-	
-	case 5:
-		if (strcmp(Token.lexeme, "while") == 0)
-			Token.type = WHILE;
-		else if (strcmp(Token.lexeme, "embed") == 0)
-			Token.type = EMBED;
-		else if (strcmp(Token.lexeme, "undef") == 0)
-			Token.type = UNDEF;
-		else if (strcmp(Token.lexeme, "error") == 0)
-			Token.type = ERROR;
-		else if (strcmp(Token.lexeme, "endif") == 0)
-			Token.type = ENDIF;
-		else if (strcmp(Token.lexeme, "false") == 0)
-			Token.type = FALSE;
-		break;
-	
-	case 7:
-		if (strncmp(Token.lexeme, "elifdef", 7) == 0)
-			Token.type = ELIFDEF;
-		else if (strncmp(Token.lexeme, "include", 7) == 0)
-			Token.type = INCLUDE;
-		else if (strncmp(Token.lexeme, "warning", 7) == 0)
-			Token.type = WARNING;
-		else if (strncmp(Token.lexeme, "defined", 7) == 0)
-			Token.type = DEFINED;
-		else if (strncmp(Token.lexeme, "alignas", 7) == 0)
-			Token.type = ALIGNAS;
-		else if (strncmp(Token.lexeme, "alignof", 7) == 0)
-			Token.type = ALIGNOF;
-		else if (strncmp(Token.lexeme, "typedef", 7) == 0)
-			Token.type = TYPEDEF;
-		else if (strncmp(Token.lexeme, "nullptr", 7) == 0)
-			Token.type = NULLPTR;
-		break;
-	
-	case 6:
-		if (strncmp(Token.lexeme, "pragma", 6) == 0)
-			Token.type = PRAGMA;
-		else if (strncmp(Token.lexeme, "extern", 6) == 0)
-			Token.type = EXTERN;
-		else if (strncmp(Token.lexeme, "static", 6) == 0)
-			Token.type = STATIC;
-		else if (strncmp(Token.lexeme, "inline", 6) == 0)
-			Token.type = INLINE;
-		else if (strncmp(Token.lexeme, "define", 6) == 0)
-			Token.type = DEFINE;
-		break;
-	
-	case 8:
-		if (strncmp(Token.lexeme, "elifndef", 8) == 0)
-			Token.type = ELIFNDEF;
-		else if (strncmp(Token.lexeme, "register", 8) == 0)
-			Token.type = REGISTER;
-		else if (strncmp(Token.lexeme, "restrict", 8) == 0)
-			Token.type = RESTRICT;
-		break;
-	
-	case 9:
-		if (strncmp(Token.lexeme, "constexpr", 9) == 0)
-			Token.type = CONSTEXPR;
-		break;
-	
-	case 14:
-		if (strncmp(Token.lexeme, "_STATIC_ASSERT", 14) == 0)
-			Token.type = _STATIC_ASSERT;
-		break;
-	
-	case 13:
-		if (strncmp(Token.lexeme, "STATIC_ASSERT", 13) == 0)
-			Token.type = STATIC_ASSERT;
-		break;
-
-	default:
-		return IDENTIFIER;
-
-	};
 
 }
-*/
 
 unsigned int encode_utf16_val(unsigned int cp) {
 	
@@ -876,12 +746,8 @@ unsigned int encode_utf16_val(unsigned int cp) {
 	}
 }
 
-void name(Token * t) {
-
-	char name_buf[MAX_NAME_LEN];
-	NameContext ctx = { 0 };
-	ctx.buf = name_buf;
-
+void name(IncludeContext * c , Token * t) {
+		
 	while (is_identifier_continue()) {
 		if (ctx.len >= MAX_NAME_LEN - 1) {
 			printf(COLOR_ACADEMIC "Identifier(Name) length can not exceed %d characters\n" COLOR_RESET,MAX_NAME_LEN);
