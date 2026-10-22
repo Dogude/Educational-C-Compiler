@@ -3,7 +3,7 @@
 # Current Situation:
 [/] Lexer : Fix utf8 handling errors  
 [/] Parser : Dynamic extending vector improvements & index based symbol access  
-[/] ExpressionEval(x64) : Implement stack based state machine 
+[/] ExpressionEval(x64) : Implement stack based state machine  
 [/] linkpe & sections : Align Windows PE structures correctly and Import Address Table & Export Address Table  
 
 # Purpose
