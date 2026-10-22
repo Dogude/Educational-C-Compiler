@@ -182,6 +182,8 @@ typedef struct IncludeContext {
 	int size;
 	int capacity;
 
+	int str_or_file;
+
 	// symbol name buffer
 	unsigned char *identifier_pool;
 	int len;
@@ -272,6 +274,7 @@ typedef struct Token {
 		double c2;
 		float c3;
 		int precedence;
+		int mem_offset; // for data segment variables, parser will copy this offset
 		int sym_index; // requires for expr eval stack, parser fills that 
 	} info ;
 
@@ -507,15 +510,15 @@ typedef enum Type {
 	PRE_PLUS_PLUS,
 	POS_PLUS_PLUS,
 	POST_MINUS_MINUS,
-
+	
 } Type;
-
+	
 void init_include(IncludeContext *c , const char *main_file);
-int peek();
-
+int peek(IncludeContext * s);
+void advance(IncludeContext * s);
 int is_digit(int c);
-int is_identifier();
-int is_identifier_continue();
+int is_identifier(IncludeContext * s);
+int is_identifier_continue(IncludeContext * s);
 // lexer end
 
 int hash_function(SymbolContext * s, const unsigned char *str) {
@@ -567,6 +570,16 @@ void init_include(IncludeContext *c , const char *main_file) {
 
 }
 
+int check_overflow (int a , int b) {
+
+	if (a > 0 && b > 0x7FFFFFFF / a) {
+
+    	exit_compiler(); 	
+	}
+
+	return 1;
+}
+
 void push_include(IncludeContext* c , const char * file) {
 	
 	FILE *f = fopen(file, "rb");
@@ -591,7 +604,8 @@ void push_include(IncludeContext* c , const char * file) {
 		c->size++;
 	}
 	else {
-		size_t new_cap = c->size * INCLUDE_GROW;
+		int new_cap = c->size * INCLUDE_GROW;
+			
 		void* ptr = realloc(c->head, new_cap * sizeof(IncludeStack));
 		if (!ptr) {
 			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
@@ -600,15 +614,15 @@ void push_include(IncludeContext* c , const char * file) {
 
 		c->head = ptr;				
 		c->size++;
-		c->capacity = new_cap;
+		c->capacity = new_cap;	
 	}
 
 	size_t i = c->size;
 	c->head[i].source = source;	
-	c->head->fpos = 0;
-	c->head->last_line = 0;
-	c->head->line = 0;
-	c->head->len = size;
+	c->head[i].fpos = 0;
+	c->head[i].last_line = 0;
+	c->head[i].line = 0;
+	c->head[i].len = size;
 
 }
 
@@ -632,10 +646,11 @@ int peek(IncludeContext * s) {
 	return pos < len ? s->head->source[pos] : EOF;
 }
 	
-void advance(IncludeContext * s) {
+unsigned int codepoint(IncludeContext * s) {
 
-	int c = peek(s);
-
+	unsigned int cp;
+	int c = peek(s); 
+	
 	if ((c & 0x80) == 0x00) {	
 		cp = c;
 	}
@@ -670,13 +685,18 @@ void advance(IncludeContext * s) {
 			(c4 & 0x3F);
 	}
 
-	return;
+	return cp;
 
 invalid_byte:	
 	printf(COLOR_ERROR "Invalid character in source code\n" COLOR_RESET);
 	// print_line();
 	exit_compiler();
 
+}
+
+void advance(IncludeContext * s) {
+
+	s->head->fpos++;
 
 }
 
@@ -684,22 +704,21 @@ int is_digit(int c) {
 	return c >= '0' && c <= '9';
 }
 
-int is_identifier(int c) {
+int is_identifier(IncludeContext * s) {
 
-	unsigned int cp = peek();
-	
+	unsigned int cp = codepoint(s);
+
 	if ((cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z') || cp == '_') {
 		return 1;
 	}
-	
+
 	if (cp < 0x80) return 0;
 
-	if (cp >= 0x2600 && cp <= 0x27BF) return 0; // Genel Semboller, Dingbats (etc, heart U+2665)
-	if (cp >= 0x1F000 && cp <= 0x1FFFF) return 0; // Emojiler (Gülen yüzler vb.)
-	if (cp >= 0xD800 && cp <= 0xDFFF) return 0; // Surrogate pairs
-	if (cp >= 0xFE00 && cp <= 0xFE0F) return 0; // Varyasyon Seçiciler (Kalbin 2. parçası U+FE0F buraya takılır)
+	if (cp >= 0x2600 && cp <= 0x27BF) return 0; 
+	if (cp >= 0x1F000 && cp <= 0x1FFFF) return 0; 
+	if (cp >= 0xD800 && cp <= 0xDFFF) return 0; 
+	if (cp >= 0xFE00 && cp <= 0xFE0F) return 0;
 
-	// 4. Geriye kalan üst aralıklar genelde uluslararası harflerdir (Çince, Kiril vb.)
 	if (cp <= 0x10FFFF) {
 		return 1;
 	}
@@ -707,10 +726,11 @@ int is_identifier(int c) {
 	return 0;
 }
 
-int is_identifier_continue(int c) {
+int is_identifier_continue(IncludeContext * s) {
 	
-	if (c >= '0' && c <= '9') return 1;
-	return is_identifier(c);
+	if (peek(s) >= '0' && peek(s) <= '9') return 1;
+	return is_identifier(s);
+
 }
 
 int is_xdigit(int c) {
@@ -758,10 +778,10 @@ void name(IncludeContext * c , Token * t) {
 }
 
 // handle utf8 to data segment
-void string(Token * t) {
+void string(IncludeContext * s , Token * t) {
 
 	Token.index = 0;
-	int c = peek();
+	int c = peek(s);
 	while (c != "\"" && Token.index < MAX_STR_LEN) {	
 		write_to_data(c);
 		Token.index++;
@@ -1293,9 +1313,9 @@ void exit_compiler() {
 }
 
 // fill token area in parser
-void lexer(Token *t) {
+void lexer(IncludeContext * s , Token * t) {
 
-	switch (peek()) {
+	switch (peek(s)) {
 	case ',':
 		t->type == COMMA;
 		break;
@@ -1486,7 +1506,7 @@ void lexer(Token *t) {
 	default:
 		if (is_digit(peek())) {
 			number();
-		}
+		}	
 		else if (is_identifier()) {
 			str_literals();
 		}
@@ -1497,15 +1517,10 @@ void lexer(Token *t) {
 		break;
 	}
 	
-	if (peek() == EOF) {
+	if (peek(s) == EOF) {
 		
 
 	}
-
-}
-
-void free_pe() {
-
 
 }
 
@@ -1522,38 +1537,9 @@ void memory_error() {
     exit_compiler();
 }
 
-
 void alloc_pe() {
     
-    struct TEXT* text_segment = malloc(sizeof(struct TEXT));
-    if (!text_segment) {
-        memory_error();
-    }
-    
-    struct DATA* data_segment = malloc(sizeof(struct DATA));
-    if (!data_segment) {
-        memory_error();
-    }
-
-    struct eDATA* edata_segment = malloc(sizeof(struct eDATA));
-    if (!edata_segment) {
-        memory_error();
-    }
-
-    text_segment->data = malloc(TEXT_SIZE);
-    if (!text_segment->data) {
-        memory_error();
-    }
-    
-    data_segment->data = malloc(DATA_SIZE);
-    if (!data_segment->data) {
-        memory_error();
-    }
-
-    edata_segment->data = malloc(EDATA_SIZE);
-    if (!edata_segment->data) {
-        memory_error();
-    }
+  
 
 }
 
@@ -1636,9 +1622,9 @@ void write_to_edata(int val) {
 
 }
 
-void init_macro(TokenArray* c) {
+void init_macro(TokenContext* c) {
 
-	struct Token *p = malloc(sizeof(struct Token) * MacroVectorInit);
+	Token *p = malloc(sizeof(Token) * MACRO_VECTOR_INIT);
 	
 	if (!p) {
 		printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
@@ -1647,11 +1633,11 @@ void init_macro(TokenArray* c) {
 
 	c->head = p;
 	c->size = 0;
-	c->capacity = MacroVectorInit;
+	c->capacity = MACRO_VECTOR_INIT;
 
 }
 
-void append_macro(TokenArray* c , struct Token * t) {
+void append_macro(TokenContext* c , Token * t) {
 	
 	if (c->size < c->capacity) {	
 		unsigned int i = c->size;
@@ -1675,14 +1661,14 @@ void append_macro(TokenArray* c , struct Token * t) {
 		
 }
 
-void release_macro(TokenArray* c) {
+void release_macro(TokenContext* c) {
 	
 	free(c->head);
 }
 
 void init_symbol(SymbolContext* c) {
 
-	sym* p = malloc(sizeof(sym) * SymbolVectorInit);
+	sym* p = malloc(sizeof(sym) * SYMBOL_VECTOR_INIT);
 	if (!p) {
 		printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
 		exit_compiler();
@@ -1690,7 +1676,7 @@ void init_symbol(SymbolContext* c) {
 
 	c->head = p;
 	c->size = 0;
-	c->capacity = SymbolVectorInit;
+	c->capacity = SYMBOL_VECTOR_INIT;
 	c->state = START;
 }
 
@@ -1702,7 +1688,7 @@ void append_symbol(SymbolContext* c , sym * s) {
 		c->size++;
 	}
 	else {
-		size_t new_cap = c->size * SymbolVectorGrow;
+		size_t new_cap = c->size * SYMBOL_VECTOR_GROW;
 		void* ptr = realloc(c->head, new_cap * sizeof(sym));
 		if (!ptr) {
 			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
@@ -1781,7 +1767,7 @@ void push(TokenContext * s , Token * t){
 
 }
 
-struct Token * pop(TokenContext * s){
+Token * pop (TokenContext * s){
 
 
 }
@@ -1790,21 +1776,18 @@ void expr_parser(SymbolContext* c) {
 // handle C expressions	
 	
 	c->state = OPERAND ;
-	struct Token token ;
+	Token token;
 	lexer(&token);
-	struct Token a[EXPR_STACK]; // default limit (256) on cpu stack
-	struct Token b[EXPR_STACK]; // default limit (256) on cpu stack
+	Token a[EXPR_STACK]; // default limit (256) on cpu stack
+	Token b[EXPR_STACK]; // default limit (256) on cpu stack
 	TokenContext operator = {a,0,EXPR_STACK};
 	TokenContext operand  = {b,0,EXPR_STACK};
 
 	while(1) {
-
 		lexer(&token);
-
 		switch(c->state) {
-
 			case OPERAND:
-				switch(token.type){
+				switch(token.type) {
 					case PLUS_PLUS:
 						token.type = PRE_PLUS_PLUS;
 						token.info.precedence = PRECEDENCE_PRE_PLUS_PLUS;
@@ -1855,9 +1838,9 @@ void expr_parser(SymbolContext* c) {
 
 }
 
-void start(SymbolContext * c) {
+void start(SymbolContext * c , Token * t) {
 
-	switch (Token.type) {
+	switch (t->type) {
 	
 	case SHARP:
 		c->state = PREPROCESSOR;

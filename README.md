@@ -1,6 +1,7 @@
 # Educational C Compiler for Windows x64 
 ***(This is an ongoing Project - Features will be added gradually)***
-# Current Situation:
+
+# Roadmap:
 [/] Lexer : Fix utf8 handling errors  
 [/] Parser : Dynamic extending vector improvements & index based symbol access  
 [/] ExpressionEval(x64) : Implement stack based state machine  
@@ -18,7 +19,7 @@ C compiler project designed to help programmers understand:
 * minimal custom linker (dynamic linking only)
 * .exe and .dll output support
   
-This project is built **for learning and research purposes**
+This project is built ***for learning and research purposes***
 
 ---
 
