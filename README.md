@@ -1,12 +1,9 @@
 # Educational C Compiler for Windows x64 
 ***(This is an ongoing Project - Features will be added gradually)***
 # Current Situation:
-- Implement all types of lexemes
-- Implement UTF-8 multi-byte decoding logic
-- Enhance parser data structures
-
 [/] Lexer : Fix utf8 handling errors  
 [/] Parser : Dynamic extending vector improvements & index based symbol access  
+[/] ExpressionEval(x64) : Implement stack based state machine 
 [/] linkpe & sections : Align Windows PE structures correctly and Import Address Table & Export Address Table  
 
 # Purpose

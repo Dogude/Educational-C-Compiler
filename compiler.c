@@ -625,20 +625,11 @@ void release_include(IncludeContext* c) {
 
 }
 
-void invalid_byte() {
-
-	printf(COLOR_ERROR "Invalid character in source code\n" COLOR_RESET);
-	// print_line();
-	exit_compiler();
-
-}
-
 int peek(IncludeContext * s) {
 
 	int len = s->head->len;
 	int pos = s->head->fpos;
 	return pos < len ? s->head->source[pos] : EOF;
-
 }
 	
 void advance(IncludeContext * s) {
@@ -678,11 +669,13 @@ void advance(IncludeContext * s) {
 			((c3 & 0x3F) << 6) |
 			(c4 & 0x3F);
 	}
-	else {
 
-		invalid_byte();
+	return;
 
-	}
+invalid_byte:	
+	printf(COLOR_ERROR "Invalid character in source code\n" COLOR_RESET);
+	// print_line();
+	exit_compiler();
 
 
 }
@@ -691,7 +684,7 @@ int is_digit(int c) {
 	return c >= '0' && c <= '9';
 }
 
-int is_identifier() {
+int is_identifier(int c) {
 
 	unsigned int cp = peek();
 	
@@ -714,10 +707,10 @@ int is_identifier() {
 	return 0;
 }
 
-int is_identifier_continue() {
-	int c = peek();
+int is_identifier_continue(int c) {
+	
 	if (c >= '0' && c <= '9') return 1;
-	return is_identifier();
+	return is_identifier(c);
 }
 
 int is_xdigit(int c) {
