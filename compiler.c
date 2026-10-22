@@ -169,6 +169,13 @@ struct section {
 
 void exit_compiler();
 
+typedef struct Context {
+	void * head;
+	int len;
+	int cap;
+} Context;
+
+
 typedef struct IncludeStack {
 	unsigned char * source;
 	int len;
@@ -225,7 +232,7 @@ typedef struct Symbol {
         float c3;
     } info ; 
 
-	unsigned int hash;	
+	int hash;	
 	int pool_offset;
     int type;
 
@@ -238,7 +245,7 @@ typedef struct SymbolContext {
     int state; // parser state for all
 } SymbolContext;
 
-int hash_function(SymbolContext * s , const unsigned char *str);
+UINT hash_function(SymbolContext * s , const unsigned char *str);
 void parser(IncludeContext *inc);
 void pragma_directive(SymbolContext* c);
 void embed_directive(SymbolContext* c);
@@ -521,7 +528,7 @@ int is_identifier(IncludeContext * s);
 int is_identifier_continue(IncludeContext * s);
 // lexer end
 
-int hash_function(SymbolContext * s, const unsigned char *str) {
+UINT hash_function(SymbolContext * s, const unsigned char *str) {
     unsigned int hash = 5381;
     int c;
     while ((c = *str++)) {
@@ -570,16 +577,6 @@ void init_include(IncludeContext *c , const char *main_file) {
 
 }
 
-int check_overflow (int a , int b) {
-
-	if (a > 0 && b > 0x7FFFFFFF / a) {
-
-    	exit_compiler(); 	
-	}
-
-	return 1;
-}
-
 void push_include(IncludeContext* c , const char * file) {
 	
 	FILE *f = fopen(file, "rb");
@@ -604,8 +601,13 @@ void push_include(IncludeContext* c , const char * file) {
 		c->size++;
 	}
 	else {
+		if(/* overflow check */ 0) {
+
+			exit_compiler();
+		}
+
 		int new_cap = c->size * INCLUDE_GROW;
-			
+		
 		void* ptr = realloc(c->head, new_cap * sizeof(IncludeStack));
 		if (!ptr) {
 			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
@@ -649,37 +651,28 @@ int peek(IncludeContext * s) {
 unsigned int codepoint(IncludeContext * s) {
 
 	unsigned int cp;
-	int c = peek(s); 
+	int c1 = peek(s); 	
+	int len = s->head->len;
+	int pos = s->head->fpos;	
+	int c2 = pos < len ? s->head->source[pos + 1] : EOF;
+	int c3 = pos < len ? s->head->source[pos + 2] : EOF;
+	int c4 = pos < len ? s->head->source[pos + 3] : EOF;
+
+	if (c2 == EOF || c3 == EOF || c4 == EOF) goto invalid_byte;
 	
-	if ((c & 0x80) == 0x00) {	
-		cp = c;
+	if ((c1 & 0x80) == 0x00) {	
+		cp = c1;
 	}
-	else if ((c & 0xE0) == 0xC0) {
-		int c2 = _peek();
-		if (c2 == EOF)
-			invalid_byte();
-		cp = ((c & 0x1F) << 6) | (c2 & 0x3F);
-	}
-	else if ((c & 0xF0) == 0xE0) {
-		int c2 = _peek();
-		int c3 = _peek();
-		if (c2 == EOF || c3 == EOF)
-			invalid_byte();
-		cp = ((c & 0x0F) << 12) |
+	else if ((c1 & 0xE0) == 0xC0) {
+		cp = ((c1 & 0x1F) << 6) | (c2 & 0x3F);
+	}	
+	else if ((c1 & 0xF0) == 0xE0) {
+		cp = ((c1 & 0x0F) << 12) |
 			((c2 & 0x3F) << 6) |
 			(c3 & 0x3F);
 	}
-	else if ((c & 0xF8) == 0xF0) {
-		int c2 = _peek();
-		if (c2 == EOF)
-			invalid_byte();
-		int c3 = _peek();
-		if (c3 == EOF)
-			invalid_byte();
-		int c4 = _peek();
-		if (c4 == EOF)
-			invalid_byte();
-		cp = ((c & 0x07) << 18) |
+	else if ((c1 & 0xF8) == 0xF0) {
+		cp = ((c1 & 0x07) << 18) |
 			((c2 & 0x3F) << 12) |
 			((c3 & 0x3F) << 6) |
 			(c4 & 0x3F);
@@ -687,11 +680,11 @@ unsigned int codepoint(IncludeContext * s) {
 
 	return cp;
 
-invalid_byte:	
-	printf(COLOR_ERROR "Invalid character in source code\n" COLOR_RESET);
-	// print_line();
-	exit_compiler();
-
+	invalid_byte:	
+		printf(COLOR_ERROR "Invalid character in source code(%s)\n" COLOR_RESET ,"");
+		// print_line();
+		exit_compiler();
+		
 }
 
 void advance(IncludeContext * s) {
