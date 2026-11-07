@@ -1,9 +1,57 @@
 #include "common.h"
 
-
+int peek(IncludeContext * s);
+void advance(IncludeContext * s);
 
 int is_digit(int c) {
 	return c >= '0' && c <= '9';
+}
+ 
+unsigned int codepoint(IncludeContext * s) {
+
+	unsigned int cp;
+	int c = peek(s); 
+
+	if ((c & 0x80) == 0x00) {	
+		cp = c;
+	}
+	else if ((c & 0xE0) == 0xC0) {		
+		int c2 = peek(s);
+		advance(s);
+		if (c2 == EOF) goto invalid_byte;
+		cp = ((c & 0x1F) << 6) | (c2 & 0x3F);
+	}	
+	else if ((c & 0xF0) == 0xE0) {
+		int c2 = peek(s);
+		advance(s);
+		int c3 = peek(s);
+		advance(s);
+		if (c2 == EOF || c3 == EOF) goto invalid_byte;
+		cp = ((c & 0x0F) << 12) |
+			((c2 & 0x3F) << 6) |
+			(c3 & 0x3F);
+	}
+	else if ((c & 0xF8) == 0xF0) {
+		int c2 = peek(s);
+		advance(s);
+		int c3 = peek(s);
+		advance(s);	
+		int c4 = peek(s);
+		advance(s);
+		if (c2 == EOF || c3 == EOF || c4 == EOF) goto invalid_byte;
+		cp = ((c & 0x07) << 18) |
+			((c2 & 0x3F) << 12) |
+			((c3 & 0x3F) << 6) |
+			(c4 & 0x3F);
+	}
+
+	return cp;
+
+	invalid_byte:	
+		printf(COLOR_ERROR "Invalid character in source code(%s)\n" COLOR_RESET ,"");
+		// print_line();
+		exit_compiler();
+		
 }
 
 int is_identifier(IncludeContext * s) {
@@ -218,7 +266,7 @@ void u_literals(Token * t) {
 }
 
 // may be continue as identifier
-void str_literals(Token * t) {
+void str_literals(IncludeContext * s , Token * t) {
 
 	Token.index = 0;
 		

@@ -13,7 +13,6 @@ enum SymbolType {
     
 };
 
-
 enum ParserState {
     START,
     PREPROCESSOR,

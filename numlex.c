@@ -1,5 +1,9 @@
 #include "common.h"
 
+int peek(IncludeContext * s);
+void advance(IncludeContext * s);
+int is_digit(int c);
+
 void check_double(Token * t) {
 
 	errno = 0;
