@@ -55,57 +55,6 @@ void init_include(IncludeContext * c , const char * main_file) {
 
 }
 
-void push_include(IncludeContext* c , const char * file) {
-	
-	FILE *f = fopen(file, "rb");
-	if(!f){
-		
-		exit_compiler();
-	}
-
-	fseek(f, 0, SEEK_END);
-	long size = ftell(f);	
-	unsigned char *source = malloc(size);
-	
-	if(!source) {
-
-		exit_compiler();
-	}
-
-	fread(source,1,size,f);
-	fclose(f);
-
-	if (c->size < c->capacity) {	
-		c->size++;
-	}
-	else {
-		if(/* overflow check */ 0) {
-
-			exit_compiler();
-		}
-
-		int new_cap = c->size * INCLUDE_GROW;
-		
-		void* ptr = realloc(c->head, new_cap * sizeof(IncludeStack));
-		if (!ptr) {
-			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
-			exit_compiler();
-		}
-
-		c->head = ptr;				
-		c->size++;
-		c->capacity = new_cap;	
-	}
-
-	size_t i = c->size;
-	c->head[i].source = source;	
-	c->head[i].fpos = 0;
-	c->head[i].last_line = 0;
-	c->head[i].line = 0;
-	c->head[i].len = size;
-
-}
-
 void pop_include(IncludeContext * c) {
 	
 	free(c->head->source); // release file char array
@@ -115,10 +64,11 @@ void pop_include(IncludeContext * c) {
 
 void release_include(IncludeContext* c) {
 	
+	size_t i = c->size;
+
 	free(c->head);
 
 }
-
 
 // fill token area that in parser
 void lexer(IncludeContext * s , Token * t) {

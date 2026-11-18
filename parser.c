@@ -1,5 +1,58 @@
 #include "common.h"
 
+void push_include(IncludeContext* c , const char * file) {
+	
+	FILE *f = fopen(file, "rb");
+	if(!f){
+		
+		exit_compiler();
+	}
+
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);	
+	unsigned char *source = malloc(size);
+	
+	if(!source) {
+
+		exit_compiler();
+	}
+
+	fread(source,1,size,f);
+	fclose(f);
+	
+	size_t i = c->size;
+
+	if (c->size < c->capacity) {	
+		c->size++;
+	}
+	else {
+		if(/* overflow check */ 0) {
+
+			exit_compiler();
+		}
+
+		int new_cap = c->size * INCLUDE_GROW;
+		
+		void* ptr = realloc(c->head, new_cap * sizeof(IncludeStack));
+		if (!ptr) {
+			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
+			exit_compiler();
+		}
+
+		c->head = ptr;				
+		c->size++;
+		c->capacity = new_cap;	
+	}
+	
+	c->head[i].source = source;	
+	c->head[i].fpos = 0;
+	c->head[i].last_line = 0;
+	c->head[i].line = 0;
+	c->head[i].len = size;
+
+}
+
+
 enum SymbolType {
 
     SYMBOL_CHAR = 0,
@@ -415,11 +468,13 @@ void pragma_directive(SymbolContext* c) {
 	
 }
 
-void parser(IncludeContext * inc) {
+void parser() {
 
-	SymbolContext parser_context = { 0 };
-	init_vector(&parser_context);
-	init_symbol();
+	SymbolContext sc = { 0 };
+	init_symbol(&sc);
+	
+	IncludeContext ic = {0};
+
 
 	switch (parser_context.state) {
 
