@@ -403,38 +403,33 @@ typedef struct IncludeContext {
 	int str_or_file;
 
 	// symbol name buffer
-	unsigned char *identifier_pool;
+	unsigned char *ip;
 	int len;
 	int cap;
 
 	// pe buffers
-	unsigned char* text_data;
-    int text_len;
-    int text_cap; 
+	unsigned char *tp; // text
+    int tl; // len
+    int tc; // cap
 
-	unsigned char* r_data;
-    int r_len;
-    int r_cap; 
-
-	unsigned char* e_data;
-    int e_len;
-    int e_cap; 
-	// pe buffers
+	unsigned char *rp; // read only data
+    int rl;
+    int rc;
+	
 
 } IncludeContext;
 
-
 // parser
-typedef struct TokenContext {
+typedef struct MacroContext {
 	struct Token *head;
 	int size;
 	int capacity;		
-} TokenContext;
+} MacroContext;
 
 typedef struct Symbol {
 	
 	union {
-        TokenContext token ; // for C Macros
+        int macro_offset;
         int mem_offset;
         size_t c1;
         double c2;
@@ -442,7 +437,7 @@ typedef struct Symbol {
     } info ; 
 
 	int hash;	
-	int pool_offset;
+	int id; // identifier offset
     int type;
 
 } sym;
@@ -453,7 +448,6 @@ typedef struct SymbolContext {
     sym * head;
     int state; // parser state for all
 } SymbolContext;
-
 
 // lexer
 typedef struct Token {	
@@ -469,7 +463,7 @@ typedef struct Token {
 
 	int type;
 
-} Token;
+} Token ;
 
 void print_line() {
 	
@@ -486,13 +480,7 @@ void print_line() {
 
 void exit_compiler() {
 
-	while (top) {
-		pop_file(&top);
-	}
 
-	free_pe();
-	free(Token.lexeme);		
-	free(FileReader.buffer);
 	exit(1);
 }
 
@@ -505,3 +493,81 @@ int hash_function(SymbolContext * s, const unsigned char *str) {
 
     return hash % s->capacity; 
 }
+
+typedef struct Vector {
+	void *head;
+	int size;
+	int capacity;		
+} Vector ;
+
+void init_vector(Vector * v , int count , int size) {
+	
+	void * ptr = malloc(count * size);
+	if(!ptr) {
+
+		exit_compiler();
+	}
+	
+	v->head = ptr;
+	v->size = 0;
+	v->capacity = count;
+
+}
+
+int check_overflow(int a , int b) {
+
+
+}
+
+void push_vector(Vector * v , void * target , int size) {
+
+	int i = v->size * size;
+	char *ptr = (char*)v->head;	
+	
+	if(v->size < v->capacity) {
+		memcpy(ptr + i, target, size);
+
+	} else {
+
+		int new_size = v->size * 2;
+		
+
+	}
+
+	v->size++;
+
+}
+
+void pop_vector(Vector * v) { 
+
+	v->size--;
+
+}
+
+void * get_elem(Vector * v , int i) {
+
+
+}
+
+typedef struct CompilerMemory {
+
+	Token t; 	 
+	Vector Token;   // Token array
+	Vector opcode;          // char array 
+	Vector data;           // char array
+	Vector symbol;         // sym array
+	Vector id;            // char array
+	Vector include;       // IncludeStack Array
+	Vector operand_ ;    // Token array
+	Vector operator_ ;  //  Token array
+	
+	int parser_state;
+	int lexer_state;
+
+} CompilerMemory;
+
+
+
+
+
+
