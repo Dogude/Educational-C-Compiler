@@ -11,26 +11,13 @@
 #define COLOR_RESET     "\033[0m"   
 
 // allocations
-#define TEXT (256*1024)
-#define TEXT_GROW 2 // until 8 mb then linear grow(+2 mb)
-#define DATA (256*1024)
-#define DATA_GROW 2 // until 8mb then linear grow(+2 mb)
-#define EAT 512
-
+#define TEXT 256*1024
+#define DATA 256*1024
 #define INCLUDE_INIT 32
-#define INCLUDE_GROW 2
-
-#define SYMBOL_VECTOR_INIT (8 * 1024)
-#define SYMBOL_VECTOR_GROW 2
-
-#define MACRO_VECTOR_INIT 16
-#define MACRO_VECTOR_GROW 2
-
-#define IDENTIFIER_POOL_INIT (256 * 1024)
-#define IDENTIFIER_POOL_GROW 2
-
-#define EXPR_STACK 256
-#define EXPR_STACK_GROW 2
+#define SYMBOL 8 * 1024
+#define MACRO 16
+#define IDENTIFIER 256 * 1024
+#define EXPR 256
 // allocations
 
 enum Precedence {

@@ -10,7 +10,6 @@ int peek(CompilerMemory * cm) {
 	int len = s->len;
 	int pos = s->fpos;
 	return pos < len ? s->source[pos] : EOF;
-	
 }
 
 void advance(CompilerMemory * cm) {
