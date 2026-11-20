@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define VER "0.90.0"
-
 #define COLOR_ERROR     "\033[91m"  // red, critical
 #define COLOR_SUCCESS   "\033[92m"  // green, approve
 #define COLOR_INFO      "\033[94m"  // blue, knowledge
@@ -266,7 +264,6 @@ typedef enum Type {
 	
 } Type;
 
-// PE Management
 typedef unsigned int UINT;
 typedef unsigned short USHORT;
 typedef unsigned char UCHAR;
@@ -285,7 +282,7 @@ struct PE {
     UINT TimeDateStamp;
     UINT PointerToSymbolTable;
     UINT NumberOfSymbolTable;
-    USHORT SizeOfOptionalHeader; // 0xF0 in PE+32 , 0xE0 in PE32
+    USHORT SizeOfOptionalHeader; // 0xF0 in 64 bit  , 0xE0 in 32 bit
     USHORT Characteristics;
     
     // Optional header start
@@ -348,7 +345,7 @@ struct PE {
     UINT ArchitectureData;
     UINT SizeOfArchitectureData;
 
-    UINT GlobalPtr; UINT ZERO1;
+    UINT GlobalPtr;   UINT ZERO1;
 
     UINT TLSTable;
     UINT SizeOfTLSTable;
@@ -368,13 +365,13 @@ struct PE {
     UINT CLRRuntimeHeader;
     UINT SizeOfCLRRuntimeHeader;
 
-    UINT ZERO2; UINT ZERO3;
+    UINT ZERO2;   UINT ZERO3;
     // Optional header end
 };
 #pragma pack(pop)
 
 struct section {
-    // name 8 bytes
+    char name[8];
     unsigned int VirtualSize;
     unsigned int VirtualAddress;
     unsigned int SizeOfRawData;
@@ -385,46 +382,16 @@ struct section {
     unsigned short NumberOfLinenumbers;
     unsigned int Characteristics;
 };
-// PE Management
 
-typedef struct IncludeStack {
+typedef struct IncludeContext {
+	
 	unsigned char * source;
 	int len;
 	int fpos;
 	int line; // count new lines
 	int last_line;	// hold position of last new line 	
-} IncludeStack;
-
-typedef struct IncludeContext {
-	IncludeStack *head;
-	int size;
-	int capacity;
-
-	int str_or_file;
-
-	// symbol name buffer
-	unsigned char *ip;
-	int len;
-	int cap;
-
-	// pe buffers
-	unsigned char *tp; // text
-    int tl; // len
-    int tc; // cap
-
-	unsigned char *rp; // read only data
-    int rl;
-    int rc;
 	
-
 } IncludeContext;
-
-// parser
-typedef struct MacroContext {
-	struct Token *head;
-	int size;
-	int capacity;		
-} MacroContext;
 
 typedef struct Symbol {
 	
@@ -440,16 +407,8 @@ typedef struct Symbol {
 	int id; // identifier offset
     int type;
 
-} sym;
+} Symbol ;
 
-typedef struct SymbolContext {
-    int size;
-    int capacity;
-    sym * head;
-    int state; // parser state for all
-} SymbolContext;
-
-// lexer
 typedef struct Token {	
 
 	union {
@@ -478,13 +437,14 @@ void print_line() {
 
 }
 
-void exit_compiler() {
-
-
+void exit_compiler(CompilerMemory *cm)  {
+	
+		
+		
 	exit(1);
 }
 
-int hash_function(SymbolContext * s, const unsigned char *str) {
+int hash_function(CompilerMemory * cm, const unsigned char *str) {
     unsigned int hash = 5381;
     int c;
     while ((c = *str++)) {
@@ -504,14 +464,14 @@ void init_vector(Vector * v , int count , int size) {
 	
 	void * ptr = malloc(count * size);
 	if(!ptr) {
-
+		
 		exit_compiler();
 	}
 	
 	v->head = ptr;
 	v->size = 0;
 	v->capacity = count;
-
+	
 }
 
 int check_overflow(int a , int b) {
@@ -551,15 +511,15 @@ void * get_elem(Vector * v , int i) {
 
 typedef struct CompilerMemory {
 
-	Token t; 	 
-	Vector Token;   // Token array
-	Vector opcode;          // char array 
-	Vector data;           // char array
-	Vector symbol;         // sym array
-	Vector id;            // char array
-	Vector include;       // IncludeStack Array
-	Vector operand_ ;    // Token array
-	Vector operator_ ;  //  Token array
+	Token t; 	 // lexer fills that
+	Vector token;   // Token array - for macro
+	Vector opcode;          // char array  - x64 opcode array
+	Vector data;           // char array - data segment
+	Vector symbol;         // sym array - symbols
+	Vector id;            // char array - identifiers
+	Vector include;       // IncludeStack Array - include file stack
+	Vector operand_ ;    // Token array - for expr eval
+	Vector operator_ ;  //  Token array - for expr eval
 	
 	int parser_state;
 	int lexer_state;

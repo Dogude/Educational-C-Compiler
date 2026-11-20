@@ -290,9 +290,6 @@ void expr_parser(SymbolContext* c) {
 
 }
 
-
-
-
 void start(SymbolContext * c , Token * t) {
 
 	switch (t->type) {
@@ -470,13 +467,9 @@ void pragma_directive(SymbolContext* c) {
 
 void parser() {
 
-	SymbolContext sc = { 0 };
-	init_symbol(&sc);
-	
-	IncludeContext ic = {0};
-
-
-	switch (parser_context.state) {
+	CompilerMemory cm = {0};
+		
+	switch (cm.state) {
 
 	case START:
 		start(&parser_context);

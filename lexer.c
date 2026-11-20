@@ -4,16 +4,19 @@ int is_identifier(IncludeContext * s);
 void str_literals(IncludeContext * s , Token * t);
 int is_digit(int c);
 
-int peek(IncludeContext * s) {
-
-	int len = s->head->len;
-	int pos = s->head->fpos;
-	return pos < len ? s->head->source[pos] : EOF;
+int peek(CompilerMemory * cm) {
+	
+	IncludeContext * s = cm->include.head;	
+	int len = s->len;
+	int pos = s->fpos;
+	return pos < len ? s->source[pos] : EOF;
+	
 }
 
-void advance(IncludeContext * s) {
+void advance(CompilerMemory * cm) {
 
-	s->head->fpos++;
+	IncludeContext * s = cm->include.head;
+	s->fpos++;
 }
 
 void init_include(IncludeContext * c , const char * main_file) {
@@ -70,7 +73,7 @@ void release_include(IncludeContext* c) {
 
 }
 
-// fill token area that in parser
+// token area from parser
 void lexer(IncludeContext * s , Token * t) {
 
 	switch (peek(s)) {
