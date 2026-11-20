@@ -371,7 +371,7 @@ struct section {
 
 typedef struct IncludeContext {
 	
-	unsigned char * source;
+	unsigned char *source;
 	int len;
 	int fpos;
 	int line; // count new lines
@@ -410,7 +410,7 @@ typedef struct Token {
 
 } Token ;
 
-void print_line() {
+void print_line(CompilerMemory *cm) {
 	
 	const char* filename = top->filename;
 	size_t pos = top->fpos;
@@ -424,33 +424,16 @@ void print_line() {
 
 void exit_compiler(CompilerMemory *cm)  {
 	
-	if(cm->token.head) {
 		free(cm->token.head);		
-	}
-	if(cm->opcode.head) {
 		free(cm->opcode.head);		
-	}
-	if(cm->data.head) {
 		free(cm->data.head);		
-	}
-	if(cm->symbol.head) {
 		free(cm->symbol.head);		
-	}
-	if(cm->id.head) {
 		free(cm->id.head);		
-	}
-	if(cm->include.head) {		
-		while(pop_include(cm));	
+		while(pop_include(cm));	 // return integer
 		free(cm->include.head);		
-	}
-	if(cm->operand.head) {
 		free(cm->operand.head);		
-	}
-	if(cm->operator.head) {
-		free(cm->operator.head);		
-	}
-		
-	exit(1);
+		free(cm->operator.head);			
+		exit(1);
 }
 
 int hash_function(CompilerMemory *cm, const unsigned char *str) {
@@ -460,7 +443,7 @@ int hash_function(CompilerMemory *cm, const unsigned char *str) {
         hash = ((hash << 5) + hash) + c;
     }
 
-    return hash % s->capacity; 
+    return hash % cm->symbol.capacity; 
 }
 
 typedef struct Vector {
@@ -480,28 +463,23 @@ void push(Vector *v , void *target , int ob_size, int cap) {
 		if(!p) {
 			
 			exit_compiler();
-		}
-		
+		}	
 		memcpy(p, target, ob_size);	
 		v->head = p;
 		v->size = 1;
 		v->capacity = cap;	
 	}
-	else if(size < capacity) {
-		
+	else if(size < capacity) {		
 		memcpy(ptr + (size * ob_size), target, ob_size);
-		v->size++;
-				
+		v->size++;			
 	} 
-	else {
-		
+	else {	
 		int new_cap = capacity * 2;
 		void *p = realloc(ptr ,new_cap * ob_size);
 		if(!p) {
 			
 			exit_compiler();			
-		}
-		
+		}	
 		v->head = p;
 		ptr = v->head;
 		memcpy(ptr + (size * ob_size), target, ob_size);
