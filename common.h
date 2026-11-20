@@ -418,19 +418,42 @@ void print_line() {
 
 	size_t line = FileReader.last_line;
 	
-
 	size_t index = FileReader.pos - FileReader.last_line;		
 
 }
 
 void exit_compiler(CompilerMemory *cm)  {
 	
-		
+	if(cm->token.head) {
+		free(cm->token.head);		
+	}
+	if(cm->opcode.head) {
+		free(cm->opcode.head);		
+	}
+	if(cm->data.head) {
+		free(cm->data.head);		
+	}
+	if(cm->symbol.head) {
+		free(cm->symbol.head);		
+	}
+	if(cm->id.head) {
+		free(cm->id.head);		
+	}
+	if(cm->include.head) {		
+		while(pop_include(cm));	
+		free(cm->include.head);		
+	}
+	if(cm->operand.head) {
+		free(cm->operand.head);		
+	}
+	if(cm->operator.head) {
+		free(cm->operator.head);		
+	}
 		
 	exit(1);
 }
 
-int hash_function(CompilerMemory * cm, const unsigned char *str) {
+int hash_function(CompilerMemory *cm, const unsigned char *str) {
     unsigned int hash = 5381;
     int c;
     while ((c = *str++)) {
@@ -485,7 +508,6 @@ void push(Vector *v , void *target , int ob_size, int cap) {
 		v->capacity = new_cap;		
 		v->size++;		
 	}
-
 
 }
 

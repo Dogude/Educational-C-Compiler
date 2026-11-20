@@ -59,7 +59,7 @@ void init_include(IncludeContext * c , const char * main_file) {
 
 void pop_include(IncludeContext * c) {
 	
-	free(c->head->source); // release file char array
+	free(c->head->source);  // release file char array
 	c->size--;
 
 }
