@@ -4,17 +4,17 @@ int is_identifier(IncludeContext * s);
 void str_literals(IncludeContext * s , Token * t);
 int is_digit(int c);
 
-int peek(CompilerMemory * cm) {
+int peek(CompilerMemory *cm) {
 	
-	IncludeContext * s = cm->include.head;	
+	IncludeContext *s = cm->include.head;	
 	int len = s->len;
 	int pos = s->fpos;
 	return pos < len ? s->source[pos] : EOF;
 }
 
-void advance(CompilerMemory * cm) {
+void advance(CompilerMemory *cm) {
 
-	IncludeContext * s = cm->include.head;
+	IncludeContext *s = cm->include.head;
 	s->fpos++;
 }
 

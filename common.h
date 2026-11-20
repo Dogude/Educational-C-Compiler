@@ -13,7 +13,7 @@
 // allocations
 #define TEXT 256*1024
 #define DATA 256*1024
-#define INCLUDE_INIT 32
+#define INCLUDE 32
 #define SYMBOL 8 * 1024
 #define MACRO 16
 #define IDENTIFIER 256 * 1024
@@ -91,7 +91,6 @@ enum Precedence {
 
 typedef enum Type {
 
-	/* literals */	
 	IDENTIFIER,
 	STR,
 	UTF8_STR,
@@ -111,7 +110,7 @@ typedef enum Type {
 	FLOAT_LITERAL,
 	LONG_DOUBLE_LITERAL,
 	
-	/* PREPROCESSOR */
+
 	DEFINE,
 	INCLUDE, FILE_STR,
 	IFNDEF,
@@ -131,7 +130,7 @@ typedef enum Type {
 	DEFINED,
 	NEW_LINE,
 
-	/* other */
+
 	EXTERN,
 	STATIC,
 	INLINE,
@@ -154,7 +153,7 @@ typedef enum Type {
 	_ALIGNAS,
 	_BOOL,
 
-	/* type words */
+
 	LONG,
 	INT,
 	AUTO,
@@ -175,7 +174,7 @@ typedef enum Type {
 	GENERIC,
 	NO_RETURN,
 	
-	/* instructions */
+
 	WHILE,
 	FOR,
 	IF,
@@ -193,7 +192,7 @@ typedef enum Type {
 
 	SEMICOLOMN,
 
-	/* Operators */	
+	
 	PLUS_EQU,
 	MINUS_EQU,
 	ASSIGN,
@@ -447,52 +446,59 @@ typedef struct Vector {
 	int capacity;		
 } Vector ;
 
-void init_vector(Vector * v , int count , int size) {
+void push(Vector *v , void *target , int ob_size, int cap) {
+
+	char *ptr = v->head;
+	int size = v->size;
+	int capacity = v->capacity;
 	
-	void * ptr = malloc(count * size);
-	if(!ptr) {
+	if(!ptr) {	
+		void *p = malloc(cap * ob_size);	
+		if(!p) {
+			
+			exit_compiler();
+		}
 		
-		exit_compiler();
+		memcpy(p, target, ob_size);	
+		v->head = p;
+		v->size = 1;
+		v->capacity = cap;	
 	}
-	
-	v->head = ptr;
-	v->size = 0;
-	v->capacity = count;
-	
-}
-
-int check_overflow(int a , int b) {
-
-
-}
-
-void push_vector(Vector * v , void * target , int size) {
-
-	int i = v->size * size;
-	char *ptr = (char*)v->head;	
-	
-	if(v->size < v->capacity) {
-		memcpy(ptr + i, target, size);
-
-	} else {
-
-		int new_size = v->size * 2;
+	else if(size < capacity) {
 		
-
+		memcpy(ptr + (size * ob_size), target, ob_size);
+		v->size++;
+				
+	} 
+	else {
+		
+		int new_cap = capacity * 2;
+		void *p = realloc(ptr ,new_cap * ob_size);
+		if(!p) {
+			
+			exit_compiler();			
+		}
+		
+		v->head = p;
+		ptr = v->head;
+		memcpy(ptr + (size * ob_size), target, ob_size);
+		v->capacity = new_cap;		
+		v->size++;		
 	}
 
-	v->size++;
 
 }
 
-void pop_vector(Vector * v) { 
-
-	v->size--;
+void pop(Vector * v) { 
+	
+	v->size-- ;	
 
 }
 
-void * get_elem(Vector * v , int i) {
+void * get(Vector * v , int s , int i ) {
 
+	char *base = v->head;
+	return base + i * s ; 
 
 }
 
@@ -502,11 +508,11 @@ typedef struct CompilerMemory {
 	Vector token;   // Token array - for macro
 	Vector opcode;          // char array  - x64 opcode array
 	Vector data;           // char array - data segment
-	Vector symbol;         // sym array - symbols
+	Vector symbol;         // Symbol array - symbols
 	Vector id;            // char array - identifiers
-	Vector include;       // IncludeStack Array - include file stack
-	Vector operand_ ;    // Token array - for expr eval
-	Vector operator_ ;  //  Token array - for expr eval
+	Vector include;       // IncludeContext Array - include file stack
+	Vector operand;    // Token array - for expr eval
+	Vector operator;  //  Token array - for expr eval
 	
 	int parser_state;
 	int lexer_state;
