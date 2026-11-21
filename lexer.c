@@ -19,11 +19,17 @@ void advance(CompilerMemory *cm) {
 }
 
 int pop_include(CompilerMemory *cm) {	
+	
+	if( cm->include.size == 0) {
+		return 0;
+	}
+	
 	IncludeContext *c = cm->include.head;
 	int i = cm->include.size - 1;	
 	free(c[i].source);  // release file char array	
 	cm->include.size--;
-	return cm->include.size == 0 ? 0 : 1;
+	
+	return 1;
 }
 
 // token area from parser
@@ -31,18 +37,18 @@ void lexer(CompilerMemory *cm) {
 
 	switch (peek(cm)) {
 	case ',':
-		t->type == COMMA;
+		cm->t.type == COMMA;
 		break;
 	case '(':
-		t->type = OPEN_PAR;
+		cm->t.type = OPEN_PAR;
 		break;
 	case ')':
-		t->type = CLOSE_PAR;
+		cm->t.type= CLOSE_PAR;
 		break;
 	case '+':
 		if (peek() == '+') {
-			t->type = PLUS_PLUS;
-			t->precedence = PRECEDENCE_PRE_MINUS_MINUS;
+			cm->t.type = PLUS_PLUS;
+			cm->t.precedence = PRECEDENCE_PRE_MINUS_MINUS;
 		}
 		else {
 			t->type = PLUS;
