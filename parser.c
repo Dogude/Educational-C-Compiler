@@ -1,8 +1,9 @@
 #include "common.h"
 
-void push_include(CompilerMemory *cm , const char * file) {
+void push_include(CompilerMemory *cm , const char *file) {
 	
 	IncludeContext *c = cm->include.head;
+	int i = cm->include.size;
 	
 	FILE *f = fopen(file, "rb");
 	if(!f){
@@ -30,7 +31,6 @@ void push_include(CompilerMemory *cm , const char * file) {
 
 }
 
-
 enum SymbolType {
 
     SYMBOL_CHAR = 0,
@@ -52,94 +52,6 @@ enum ParserState {
     EXPR_STATE, OPERAND, OPERATOR
 };
 
-void init_symbol(SymbolContext* c) {
-
-	sym* p = malloc(sizeof(sym) * SYMBOL_VECTOR_INIT);
-	if (!p) {
-		printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
-		exit_compiler();
-	}
-
-	c->head = p;
-	c->size = 0;
-	c->capacity = SYMBOL_VECTOR_INIT;
-	c->state = START;
-}
-
-void append_symbol(SymbolContext* c , sym * s) {
-	
-	if (c->size < c->capacity) {	
-		size_t i = c->size;
-		memcpy(&c->head[i], s, sizeof(sym));
-		c->size++;
-	}
-	else {
-		size_t new_cap = c->size * SYMBOL_VECTOR_GROW;
-		void* ptr = realloc(c->head, new_cap * sizeof(sym));
-		if (!ptr) {
-			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
-			exit_compiler();
-		}
-
-		c->head = ptr;
-		size_t i = c->size;
-		memcpy(&c->head[i], s, sizeof(sym));
-		c->size++;
-		c->capacity = new_cap;
-	}
-		
-}
-
-void release_symbols(SymbolContext* c) {
-	
-	free(c->head);
-}
-
-void init_macro(TokenContext* c) {
-
-	Token *p = malloc(sizeof(Token) * MACRO_VECTOR_INIT);
-	
-	if (!p) {
-		printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
-		exit_compiler();
-	}
-
-	c->head = p;
-	c->size = 0;
-	c->capacity = MACRO_VECTOR_INIT;
-
-}
-
-void append_macro(TokenContext* c , Token * t) {
-	
-	if (c->size < c->capacity) {	
-		unsigned int i = c->size;
-		memcpy(&c->head[i], t, sizeof(struct Token));
-		c->size++;
-	}
-	else {
-		unsigned int new_cap = c->size * MacroVectorGrow;
-		void* ptr = realloc(c->head, new_cap * sizeof(struct Token));
-		if (!ptr) {
-			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
-			exit_compiler();
-		}
-
-		c->head = ptr;
-		unsigned int i = c->size;
-		memcpy(&c->head[i], t, sizeof(struct Token));
-		c->size++;
-		c->capacity = new_cap;
-	}
-		
-}
-
-void release_macro(TokenContext* c) {
-	
-	free(c->head);
-}
-
-
 void preprocessor_expr_eval(SymbolContext* c) {
 // handle #if #elif expressions	
 
@@ -156,48 +68,6 @@ void preprocessor_expr_parser(SymbolContext* c) {
 
 // generate x64 opcode
 void expr_eval(TokenContext * s){
-
-
-}
-
-void push(TokenContext * s , Token * t){
-	
-	if(s->size < s->capacity) {
-		s->head[s->size] = *t;
-		s->size++;
-	}  
-	else {	
-		struct Token *ptr = NULL;
-		unsigned int new_capacity = s->size * 2;
-
-		if(s->size == EXPR_STACK) {
-			ptr = malloc(new_capacity * sizeof(struct Token));
-			if(!ptr) {
-
-				exit_compiler();
-			}		
-			memcpy(ptr, s->head, sizeof(Token) * EXPR_STACK);
-		
-		} else {
-
-			ptr = realloc(s->head, new_capacity * sizeof(Token));
-			if(!ptr){
-
-				exit_compiler();
-			}	
-		
-		}
-
-		s->head = ptr;
-		s->head[s->size] = *t;
-		s->size++;
-		s->capacity = new_capacity;
-	
-	}
-
-}
-
-Token * pop (TokenContext * s){
 
 
 }
@@ -257,14 +127,6 @@ void expr_parser(SymbolContext* c) {
 
 	// final state of parser	
 	// while not stack empty
-
-	if(operator.capacity > EXPR_STACK) {
-		free(operator.head);
-	}
-
-	if(operand.capacity > EXPR_STACK){
-		free(operand.head);
-	}
 
 }
 
