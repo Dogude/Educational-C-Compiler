@@ -1,6 +1,6 @@
 #include "common.h"
 
-void push_include(IncludeContext* c , const char * file) {
+void push_include(CompilerMemory *cm , const char * file) {
 	
 	FILE *f = fopen(file, "rb");
 	if(!f){
@@ -468,8 +468,8 @@ void pragma_directive(SymbolContext* c) {
 void parser(const char *main) {
 	
 	CompilerMemory cm = {0};
-		
-		
+	push_include(&cm,main);
+	
 	switch (cm.state) {
 
 	case START:

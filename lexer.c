@@ -18,57 +18,10 @@ void advance(CompilerMemory *cm) {
 	s->fpos++;
 }
 
-void init_include(IncludeContext * c , const char * main_file) {
-
-	IncludeStack *p = malloc(sizeof(IncludeStack) * INCLUDE_INIT);
-	if (!p) {
-		printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
-		exit_compiler();
-	}
-
-	c->head = p;
-	c->size = 0;
-	c->capacity = INCLUDE_INIT;
-
-	FILE * file = fopen(main_file, "rb");	
-	if(!file){
-		printf(COLOR_ERROR "Can not open file : %s\n" COLOR_RESET , main_file);
-		exit_compiler();
-	}
-
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-
-	unsigned char *source = malloc(size);
-
-	if (!source) {
-		printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
-		exit_compiler();
-	}
-
-	fread(source,1,size,file);
-	fclose(file);
-
-	c->head->source = source;
-	c->head->fpos = 0;
-	c->head->last_line = 0;
-	c->head->line = 0;
-	c->head->len = size;
-
-}
-
 void pop_include(IncludeContext * c) {
 	
 	free(c->head->source);  // release file char array
 	c->size--;
-
-}
-
-void release_include(IncludeContext* c) {
-	
-	size_t i = c->size;
-
-	free(c->head);
 
 }
 
