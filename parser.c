@@ -2,6 +2,8 @@
 
 void push_include(CompilerMemory *cm , const char * file) {
 	
+	IncludeContext *c = cm->include.head;
+	
 	FILE *f = fopen(file, "rb");
 	if(!f){
 		
@@ -20,35 +22,11 @@ void push_include(CompilerMemory *cm , const char * file) {
 	fread(source,1,size,f);
 	fclose(f);
 	
-	size_t i = c->size;
-
-	if (c->size < c->capacity) {	
-		c->size++;
-	}
-	else {
-		if(/* overflow check */ 0) {
-
-			exit_compiler();
-		}
-
-		int new_cap = c->size * INCLUDE_GROW;
-		
-		void* ptr = realloc(c->head, new_cap * sizeof(IncludeStack));
-		if (!ptr) {
-			printf(COLOR_ERROR "Memory Error.\n" COLOR_RESET);
-			exit_compiler();
-		}
-
-		c->head = ptr;				
-		c->size++;
-		c->capacity = new_cap;	
-	}
-	
-	c->head[i].source = source;	
-	c->head[i].fpos = 0;
-	c->head[i].last_line = 0;
-	c->head[i].line = 0;
-	c->head[i].len = size;
+	c[i].source = source;	
+	c[i].fpos = 0;
+	c[i].last_line = 0;
+	c[i].line = 0;
+	c[i].len = size;
 
 }
 

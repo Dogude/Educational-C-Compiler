@@ -18,7 +18,7 @@ void advance(CompilerMemory *cm) {
 	s->fpos++;
 }
 
-void pop_include(IncludeContext * c) {
+int pop_include(CompilerMemory *cm) {
 	
 	free(c->head->source);  // release file char array
 	c->size--;
