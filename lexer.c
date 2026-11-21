@@ -1,7 +1,7 @@
 #include "common.h"
 
-int is_identifier(IncludeContext * s);
-void str_literals(IncludeContext * s , Token * t);
+int is_identifier(CompilerMemory *cm);
+void str_literals(CompilerMemory *cm);
 int is_digit(int c);
 
 int peek(CompilerMemory *cm) {

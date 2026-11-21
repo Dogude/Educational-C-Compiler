@@ -465,29 +465,32 @@ void pragma_directive(SymbolContext* c) {
 	
 }
 
-void parser() {
-
+void parser(const char *main) {
+	
 	CompilerMemory cm = {0};
+		
 		
 	switch (cm.state) {
 
 	case START:
-		start(&parser_context);
+		start(&cm);
 		break;
 
 	case PREPROCESSOR:
-		preprocessor(&parser_context);
+		preprocessor(&cm);
 		break;
 
 	case EMBED_DIRECTIVE:
-		embed_directive(&parser_context);
+		embed_directive(&cm);
 		break;
 
 	case PRAGMA_DIRECTIVE:
-		pragma_directive(&parser_context);
+		pragma_directive(&cm);
 		break;
 
 	default:
 		break;
-	}	
+	}
+
+	
 }

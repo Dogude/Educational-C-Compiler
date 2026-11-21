@@ -403,7 +403,7 @@ typedef struct Token {
 		float c3;
 		int precedence;
 		int mem_offset; // for data segment variables, parser will copy this offset
-		int sym_index; // requires for expr eval stack, parser fills that 
+		int symbol_index; // requires for expr eval stack, parser fills that 
 	} info ;
 
 	int type;
@@ -412,7 +412,7 @@ typedef struct Token {
 
 void print_line(CompilerMemory *cm) {
 	
-	const char* filename = top->filename;
+	const char *filename = top->filename;
 	size_t pos = top->fpos;
 	printf(COLOR_PRIMARY "Error in file : %s , Position : %lld\n" COLOR_RESET, filename,pos);
 
