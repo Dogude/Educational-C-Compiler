@@ -2,8 +2,7 @@
 
 void push_include(CompilerMemory *cm , const char *file) {
 	
-	IncludeContext *c = cm->include.head;
-	int i = cm->include.size;
+	IncludeContext c = {0};
 	
 	FILE *f = fopen(file, "rb");
 	if(!f){
@@ -23,11 +22,13 @@ void push_include(CompilerMemory *cm , const char *file) {
 	fread(source,1,size,f);
 	fclose(f);
 	
-	c[i].source = source;	
-	c[i].fpos = 0;
-	c[i].last_line = 0;
-	c[i].line = 0;
-	c[i].len = size;
+	c.source = source;	
+	c.fpos = 0;
+	c.last_line = 0;
+	c.line = 0;
+	c.len = size;
+	
+	push(&cm->include,&c,sizeof(IncludeContext),INCLUDE);
 
 }
 
@@ -52,42 +53,37 @@ enum ParserState {
     EXPR_STATE, OPERAND, OPERATOR
 };
 
-void preprocessor_expr_eval(SymbolContext* c) {
-// handle #if #elif expressions	
+// compile time boolean result
+void preprocessor_expr_eval(CompilerMemory *cm) {
+
 
 
 }
 
-
-void preprocessor_expr_parser(SymbolContext* c) {
 // handle #if #elif expressions	
+void preprocessor_expr_parser(CompilerMemory *cm) {
+
 	
 
 }
-
 
 // generate x64 opcode
-void expr_eval(TokenContext * s){
+void expr_eval(CompilerMemory *cm){
 
 
 }
 
-void expr_parser(SymbolContext* c) {
 // handle C expressions	
-	
-	c->state = OPERAND ;
-	Token token;
-	lexer(&token);
-	Token a[EXPR_STACK]; // default limit (256) on cpu stack
-	Token b[EXPR_STACK]; // default limit (256) on cpu stack
-	TokenContext operator = {a,0,EXPR_STACK};
-	TokenContext operand  = {b,0,EXPR_STACK};
+void expr_parser(CompilerMemory *cm) {
+
+	cm->state = OPERAND ;
+	lexer(cm);
 
 	while(1) {
-		lexer(&token);
-		switch(c->state) {
+		lexer(cm);
+		switch(cm->state) {
 			case OPERAND:
-				switch(token.type) {
+				switch(cm->t.type) {
 					case PLUS_PLUS:
 						token.type = PRE_PLUS_PLUS;
 						token.info.precedence = PRECEDENCE_PRE_PLUS_PLUS;
@@ -122,20 +118,19 @@ void expr_parser(SymbolContext* c) {
 
 		}
     
-
 	}
-
+	
 	// final state of parser	
 	// while not stack empty
 
 }
 
-void start(SymbolContext * c , Token * t) {
+void start(CompilerMemory *cm) {
 
-	switch (t->type) {
+	switch (cm->t.type) {
 	
 	case SHARP:
-		c->state = PREPROCESSOR;
+		cm->state = PREPROCESSOR;
 		break;
 
 	case TYPEDEF:

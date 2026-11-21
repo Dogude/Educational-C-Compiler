@@ -5,30 +5,31 @@ void str_literals(CompilerMemory *cm);
 int is_digit(int c);
 
 int peek(CompilerMemory *cm) {
-	
-	IncludeContext *s = cm->include.head;	
-	int len = s->len;
-	int pos = s->fpos;
-	return pos < len ? s->source[pos] : EOF;
+	IncludeContext *s = cm->include.head;
+	int i = s->size - 1;	
+	int len = s[i].len;
+	int pos = s[i].fpos;
+	return pos < len ? s[i].source[pos] : EOF;
 }
 
 void advance(CompilerMemory *cm) {
-
-	IncludeContext *s = cm->include.head;
-	s->fpos++;
+	IncludeContext *c = cm->include.head;
+	int i = cm->include.size - 1;	
+	c[i].fpos++;
 }
 
-int pop_include(CompilerMemory *cm) {
-	
-	free(c->head->source);  // release file char array
-	c->size--;
-
+int pop_include(CompilerMemory *cm) {	
+	IncludeContext *c = cm->include.head;
+	int i = cm->include.size - 1;	
+	free(c[i].source);  // release file char array	
+	cm->include.size--;
+	return cm->include.size == 0 ? 0 : 1;
 }
 
 // token area from parser
-void lexer(IncludeContext * s , Token * t) {
+void lexer(CompilerMemory *cm) {
 
-	switch (peek(s)) {
+	switch (peek(cm)) {
 	case ',':
 		t->type == COMMA;
 		break;
@@ -164,17 +165,17 @@ void lexer(IncludeContext * s , Token * t) {
 		break;
 	
 	case '.':
-		advance();		
+		advance(cm);		
 		if (peek() != '.') {
 			Token.type = DOT;
 			break;
 		}
-		advance();
+		advance(cm);
 		if (peek() != '.') {
 			
 			exit_compiler();			
 		}
-		advance();
+		advance(cm);
 		Token.type = THREE_DOT;
 		break;
 		
